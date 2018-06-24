@@ -30,4 +30,5 @@ echo "source ~/peda/peda.py" >> ~/.gdbinit
 echo "set disassembly-flavor intel" >> ~/.gdbinit
 
 #copy tmux conf
+git clone https://github.com/happynote3966/myshellscripts.git
 cp .tmux.conf ~/
