@@ -294,11 +294,13 @@ typedef union {
 
 static inline int ldub_p(const void *ptr)
 {
+    printf("[contents] = %02x\n",*(uint8_t *)ptr);
     return *(uint8_t *)ptr;
 }
 
 static inline int ldsb_p(const void *ptr)
 {
+    printf("[contents] = %02x\n",*(int8_t *)ptr);
     return *(int8_t *)ptr;
 }
 
@@ -315,6 +317,7 @@ static inline int lduw_he_p(const void *ptr)
 {
     uint16_t r;
     memcpy(&r, ptr, sizeof(r));
+    printf("[contents] = %04x\n",*(uint16_t *)ptr);
     return r;
 }
 
@@ -322,6 +325,7 @@ static inline int ldsw_he_p(const void *ptr)
 {
     int16_t r;
     memcpy(&r, ptr, sizeof(r));
+    printf("[contents] = %04x\n",*(int16_t *)ptr);
     return r;
 }
 
@@ -333,6 +337,7 @@ static inline void stw_he_p(void *ptr, uint16_t v)
 static inline int ldl_he_p(const void *ptr)
 {
     int32_t r;
+    printf("[contents] = %08x\n",*(uint32_t *)ptr);
     memcpy(&r, ptr, sizeof(r));
     return r;
 }

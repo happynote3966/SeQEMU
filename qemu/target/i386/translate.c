@@ -1868,7 +1868,6 @@ static void gen_shifti(DisasContext *s1, int op, TCGMemOp ot, int d, int c)
 static uint64_t advance_pc(CPUX86State *env, DisasContext *s, int num_bytes)
 {
     uint64_t pc = s->pc;
-
     s->pc += num_bytes;
     if (unlikely(s->pc - s->pc_start > X86_MAX_INSN_LENGTH)) {
         /* If the instruction's 16th byte is on a different page than the 1st, a
@@ -1883,7 +1882,7 @@ static uint64_t advance_pc(CPUX86State *env, DisasContext *s, int num_bytes)
         }
         siglongjmp(s->jmpbuf, 1);
     }
-
+    printf("[addr = 0x%016llx]",guest_base + pc);
     return pc;
 }
 

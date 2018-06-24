@@ -96,6 +96,7 @@ void cpu_loop(CPUX86State *env)
 
         switch(trapnr) {
         case 0x80:
+            printf("[int0x80][EAX = %016llx, EBX = %016llx, ECX = %016llx, EDX = %016llx, ESI = %016llx, EDI = %016llx, EBP = %016llx]\n",guest_base + env->regs[R_EAX],guest_base + env->regs[R_EBX],guest_base + env->regs[R_ECX],guest_base + env->regs[R_EDX],guest_base + env->regs[R_ESI],guest_base + env->regs[R_EDI],guest_base + env->regs[R_EBP]);
             /* linux syscall from int $0x80 */
             ret = do_syscall(env,
                              env->regs[R_EAX],
