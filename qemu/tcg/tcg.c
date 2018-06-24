@@ -60,6 +60,7 @@
 #include "exec/log.h"
 #include "sysemu/sysemu.h"
 
+
 /* Forward declarations for functions declared in tcg-target.inc.c and
    used here. */
 static void tcg_target_init(TCGContext *s);
@@ -1985,6 +1986,8 @@ static TCGOp *tcg_op_alloc(TCGOpcode opc)
 TCGOp *tcg_emit_op(TCGOpcode opc)
 {
     TCGOp *op = tcg_op_alloc(opc);
+    const TCGOpDef *def = &tcg_op_defs[opc];
+    fprintf(stdout, "TCG %s %u, %u, %u\n",def->name,def->nb_oargs,def->nb_iargs,def->nb_cargs);
     QTAILQ_INSERT_TAIL(&tcg_ctx->ops, op, link);
     return op;
 }
