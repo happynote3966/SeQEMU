@@ -29,6 +29,8 @@ git clone https://github.com/longld/peda.git ~/peda
 echo "source ~/peda/peda.py" >> ~/.gdbinit
 echo "set disassembly-flavor intel" >> ~/.gdbinit
 
-#copy tmux conf
+#tmux install
 git clone https://github.com/happynote3966/myshellscripts.git
-cp .tmux.conf ~/
+apt-get install tmux
+cp myshellscripts/.tmux.conf ~/
+rm -rf myshellscripts
