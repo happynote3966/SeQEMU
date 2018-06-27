@@ -405,7 +405,7 @@ static const char *target_parse_constraint(TCGArgConstraint *ct,
 void tci_disas(uint8_t opc)
 {
     const TCGOpDef *def = &tcg_op_defs[opc];
-    fprintf(stdout, "TCG %s %u, %u, %u\n",
+    fprintf(stderr, "TCG %s %u, %u, %u\n",
             def->name, def->nb_oargs, def->nb_iargs, def->nb_cargs);
 }
 #endif
