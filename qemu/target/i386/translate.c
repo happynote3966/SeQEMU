@@ -4489,36 +4489,47 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
     /* Collect prefixes.  */
     switch (b) {
     case 0xf3:
+	printf("PREFIX:REPZ\n");
         prefixes |= PREFIX_REPZ;
         goto next_byte;
     case 0xf2:
+	printf("PREFIX:REPNZ\n");
         prefixes |= PREFIX_REPNZ;
         goto next_byte;
     case 0xf0:
+	printf("PREFIX:LOCK\n");
         prefixes |= PREFIX_LOCK;
         goto next_byte;
     case 0x2e:
+	printf("s->override:R_CS\n");
         s->override = R_CS;
         goto next_byte;
     case 0x36:
+	printf("s->override:R_SS\n");
         s->override = R_SS;
         goto next_byte;
     case 0x3e:
+	printf("s->override:R_DS\n");
         s->override = R_DS;
         goto next_byte;
     case 0x26:
+	printf("s->override:R_ES\n");
         s->override = R_ES;
         goto next_byte;
     case 0x64:
+	printf("s->override:R_FS\n");
         s->override = R_FS;
         goto next_byte;
     case 0x65:
+	printf("s->override:R_GS\n");
         s->override = R_GS;
         goto next_byte;
     case 0x66:
+	printf("PREFIX:DATA\n");
         prefixes |= PREFIX_DATA;
         goto next_byte;
     case 0x67:
+	printf("PREFIX:ADR\n");
         prefixes |= PREFIX_ADR;
         goto next_byte;
 #ifdef TARGET_X86_64
@@ -4741,10 +4752,62 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         /* inc, dec, and other misc arith */
     case 0x40 ... 0x47: /* inc Gv */
         ot = dflag;
+	switch(OR_EAX+(b&7)){
+            case OR_EAX:
+                printf("[disas_insn] inc eax\n");
+                break;
+            case OR_ECX:
+                printf("[disas_insn] inc ecx\n");
+                break;
+            case OR_EDX:
+                printf("[disas_insn] inc edx\n");
+                break;
+            case OR_EBX:
+                printf("[disas_insn] inc ebx\n");
+                break;
+            case OR_ESP:
+                printf("[disas_insn] inc esp\n");
+                break;
+            case OR_EBP:
+                printf("[disas_insn] inc ebp\n");
+                break;
+            case OR_ESI:
+                printf("[disas_insn] inc esi\n");
+                break;
+            case OR_EDI:
+                printf("[disas_insn] inc edi\n");
+                break;
+        }
         gen_inc(s, ot, OR_EAX + (b & 7), 1);
         break;
     case 0x48 ... 0x4f: /* dec Gv */
         ot = dflag;
+	switch(OR_EAX+(b&7)){
+            case OR_EAX:
+                printf("[disas_insn] dec eax\n");
+                break;
+            case OR_ECX:
+                printf("[disas_insn] dec ecx\n");
+                break;
+            case OR_EDX:
+                printf("[disas_insn] dec edx\n");
+                break;
+            case OR_EBX:
+                printf("[disas_insn] dec ebx\n");
+                break;
+            case OR_ESP:
+                printf("[disas_insn] dec esp\n");
+                break;
+            case OR_EBP:
+                printf("[disas_insn] dec ebp\n");
+                break;
+            case OR_ESI:
+                printf("[disas_insn] dec esi\n");
+                break;
+            case OR_EDI:
+                printf("[disas_insn] dec edi\n");
+                break;
+        }
         gen_inc(s, ot, OR_EAX + (b & 7), -1);
         break;
     case 0xf6: /* GRP3 */
