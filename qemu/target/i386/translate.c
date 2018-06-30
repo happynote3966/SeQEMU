@@ -5451,25 +5451,59 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
     case 0xc9: /* leave */
         gen_leave(s);
         break;
-    case 0x06: /* push es */
-    case 0x0e: /* push cs */
-    case 0x16: /* push ss */
-    case 0x1e: /* push ds */
+    case 0x06: /* push es */ /* 0 0110 (0) */
+    case 0x0e: /* push cs */ /* 0 1110 (1) */
+    case 0x16: /* push ss */ /* 1 0110 (2) */
+    case 0x1e: /* push ds */ /* 1 1110 (3) */
         if (CODE64(s))
             goto illegal_op;
+        switch(b >> 3){
+            case 0:
+                printf("[disas_insn] push es\n");
+                break;
+            case 1:
+                printf("[disas_insn] push cs\n");
+                break;
+            case 2:
+                printf("[disas_insn] push ss\n");
+                break;
+            case 3:
+                printf("[disas_insn] push ds\n");
+                break;
+        }
         gen_op_movl_T0_seg(b >> 3);
         gen_push_v(s, cpu_T0);
         break;
-    case 0x1a0: /* push fs */
-    case 0x1a8: /* push gs */
+    case 0x1a0: /* push fs */ /* 1 1010 0000 (4) */
+    case 0x1a8: /* push gs */ /* 1 1010 1000 (5) */
+        switch((b >> 3) & 7){
+            case 4:
+                printf("[disas_insn] push fs\n");
+                break;
+            case 5:
+                printf("[disas_insn] push gs\n");
+                break;
+        }
         gen_op_movl_T0_seg((b >> 3) & 7);
         gen_push_v(s, cpu_T0);
         break;
-    case 0x07: /* pop es */
-    case 0x17: /* pop ss */
-    case 0x1f: /* pop ds */
+    case 0x07: /* pop es */ /* 0000 0111 (0) */
+    case 0x17: /* pop ss */ /* 0001 0111 (1) */
+    case 0x1f: /* pop ds */ /* 0001 1111 (2) */
         if (CODE64(s))
             goto illegal_op;
+        switch(b >> 3){
+            case 0:
+                printf("[disas_insn] pop es\n");
+                break;
+            case 1:
+                printf("[disas_insn] pop ss\n");
+                break;
+            case 2:
+                printf("[disas_insn] pop ds\n");
+                break;
+
+        }
         reg = b >> 3;
         ot = gen_pop_T0(s);
         gen_movl_seg_T0(s, reg);
@@ -5485,8 +5519,16 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
             }
         }
         break;
-    case 0x1a1: /* pop fs */
-    case 0x1a9: /* pop gs */
+    case 0x1a1: /* pop fs */ /* 1 1010 0001 (4) */
+    case 0x1a9: /* pop gs */ /* 1 1010 1001 (5) */
+        switch((b >> 3) & 7){
+            case 4:
+                printf("[disas_insn] pop fs\n");
+                break;
+            case 5:
+                printf("[disas_insn] pop gs\n");
+                break;
+        }
         ot = gen_pop_T0(s);
         gen_movl_seg_T0(s, (b >> 3) & 7);
         gen_pop_update(s, ot);
@@ -5515,7 +5557,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         if (mod != 3) {
             s->rip_offset = insn_const_size(ot);
             gen_lea_modrm(env, s, modrm);
-        }
+        }	
         val = insn_get(env, s, ot);
         tcg_gen_movi_tl(cpu_T0, val);
         if (mod != 3) {
