@@ -4485,6 +4485,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
     rex_r = 0;
 
  next_byte:
+    printf("===== PREFIX START =====\n");
     b = x86_ldub_code(env, s);
     /* Collect prefixes.  */
     switch (b) {
@@ -4547,6 +4548,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
 #endif
     case 0xc5: /* 2-byte VEX */
     case 0xc4: /* 3-byte VEX */
+        printf("s->code = %d ==> ",s->code);
         /* VEX prefixes cannot be used except in 32-bit mode.
            Otherwise the instruction is LES or LDS.  */
         if (s->code32 && !s->vm86) {
@@ -4632,9 +4634,59 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
     s->prefix = prefixes;
     s->aflag = aflag;
     s->dflag = dflag;
+    printf("PREFIX =");
+    if(s->prefix & PREFIX_REPZ){
+        printf(" REPZ");
+    }
+    if(s->prefix & PREFIX_REPNZ){
+        printf(" REPNZ");
+    }
+    if(s->prefix & PREFIX_LOCK){
+        printf(" LOCK");
+    }
+    if(s->prefix & PREFIX_DATA){
+        printf(" DATA");
+    }
+    if(s->prefix & PREFIX_ADR){
+        printf(" ADR");
+    }
+    if(s->prefix & PREFIX_VEX){
+        printf(" VEX");
+    }
+
+    printf(" s->aflag = ");
+    switch(s->aflag){
+        case 0:
+            printf("MO_8");
+            break;
+        case 1:
+            printf("MO_16");
+            break;
+        case 2:
+            printf("MO_32");
+            break;
+        default:
+            printf("Unknown");
+    }
+    printf(" s->dflag = ");
+    switch(s->dflag){
+        case 0:
+            printf("MO_8");
+            break;
+        case 1:
+            printf("MO_16");
+            break;
+        case 2:
+            printf("MO_32");
+            break;
+        default:
+            printf("Unknown");
+    }
+    printf("===== PREFIX END =====\n");
 
     /* now check op code */
  reswitch:
+    printf("===== OPECODE START =====\n");
     switch(b) {
     case 0x0f:
         /**************************/
@@ -5394,10 +5446,62 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         /**************************/
         /* push/pop */
     case 0x50 ... 0x57: /* push */
+        switch(b & 7){
+            case 0:
+                printf("[disas_insn] push eax\n");
+                break;
+            case 1:
+                printf("[disas_insn] push ecx\n");
+                break;
+            case 2:
+                printf("[disas_insn] push edx\n");
+                break;
+            case 3:
+                printf("[disas_insn] push ebx\n");
+                break;
+            case 4:
+                printf("[disas_insn] push esp\n");
+                break;
+            case 5:
+                printf("[disas_insn] push ebp\n");
+                break;
+            case 6:
+                printf("[disas_insn] push esi\n");
+                break;
+            case 7:
+                printf("[disas_insn] push edi\n");
+                break;
+        }
         gen_op_mov_v_reg(MO_32, cpu_T0, (b & 7) | REX_B(s));
         gen_push_v(s, cpu_T0);
         break;
     case 0x58 ... 0x5f: /* pop */
+        switch(b & 7){
+            case 0:
+                printf("[disas_insn] pop eax\n");
+                break;
+            case 1:
+                printf("[disas_insn] pop ecx\n");
+                break;
+            case 2:
+                printf("[disas_insn] pop edx\n");
+                break;
+            case 3:
+                printf("[disas_insn] pop ebx\n");
+                break;
+            case 4:
+                printf("[disas_insn] pop esp\n");
+                break;
+            case 5:
+                printf("[disas_insn] pop ebp\n");
+                break;
+            case 6:
+                printf("[disas_insn] pop esi\n");
+                break;
+            case 7:
+                printf("[disas_insn] pop edi\n");
+                break;
+        }
         ot = gen_pop_T0(s);
         /* NOTE: order is important for pop %sp */
         gen_pop_update(s, ot);
@@ -5406,11 +5510,13 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
     case 0x60: /* pusha */
         if (CODE64(s))
             goto illegal_op;
+        printf("[disas_insn] pusha\n");
         gen_pusha(s);
         break;
     case 0x61: /* popa */
         if (CODE64(s))
             goto illegal_op;
+        printf("[disas_insn] popa\n");
         gen_popa(s);
         break;
     case 0x68: /* push Iv */
@@ -5442,6 +5548,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         break;
     case 0xc8: /* enter */
         {
+            printf("[disas_insn] enter\n");
             int level;
             val = x86_lduw_code(env, s);
             level = x86_ldub_code(env, s);
@@ -5449,6 +5556,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         }
         break;
     case 0xc9: /* leave */
+        printf("[disas_insn] leave\n");
         gen_leave(s);
         break;
     case 0x06: /* push es */ /* 0 0110 (0) */
