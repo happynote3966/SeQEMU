@@ -4548,7 +4548,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
 #endif
     case 0xc5: /* 2-byte VEX */
     case 0xc4: /* 3-byte VEX */
-        printf("s->code = %d ==> ",s->code);
+        printf("s->code32 = %d ==> ",s->code32);
         /* VEX prefixes cannot be used except in 32-bit mode.
            Otherwise the instruction is LES or LDS.  */
         if (s->code32 && !s->vm86) {
@@ -4653,6 +4653,9 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
     if(s->prefix & PREFIX_VEX){
         printf(" VEX");
     }
+    if(s->prefix == 0){
+        printf(" None");
+    }
 
     printf(" s->aflag = ");
     switch(s->aflag){
@@ -4682,7 +4685,7 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         default:
             printf("Unknown");
     }
-    printf("===== PREFIX END =====\n");
+    printf("\n===== PREFIX END =====\n");
 
     /* now check op code */
  reswitch:
@@ -4710,6 +4713,33 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
             f = (b >> 1) & 3;
 
             ot = mo_b_d(b, dflag);
+            switch(op){
+                case 0:
+                    printf("OP_ADDL");
+                    break;
+                case 1:
+                    printf("OP_ORL");
+                    break;
+                case 2:
+                    printf("OP_ADCL");
+                    break;
+                case 3:
+                    printf("OP_SBBL");
+                    break;
+                case 4:
+                    printf("OP_ANDL");
+                    break;
+                case 5:
+                    printf("OP_SUBL");
+                    break;
+                case 6:
+                    printf("OP_XORL");
+                    break;
+                case 7:
+                    printf("OP_CMPL");
+                    break;
+            }
+
 
             switch(f) {
             case 0: /* OP Ev, Gv */
@@ -5650,10 +5680,36 @@ static target_ulong disas_insn(DisasContext *s, CPUState *cpu)
         /* mov */
     case 0x88:
     case 0x89: /* mov Gv, Ev */
+	printf("[disas_insn] mov ");
         ot = mo_b_d(b, dflag);
         modrm = x86_ldub_code(env, s);
         reg = ((modrm >> 3) & 7) | rex_r;
-
+	switch(reg){
+            case OR_EAX:
+                printf("eax \n");
+                break;
+            case OR_ECX:
+                printf("ecx \n");
+                break;
+            case OR_EDX:
+                printf("edx \n");
+                break;
+            case OR_EBX:
+                printf("ebx \n");
+                break;
+            case OR_ESP:
+                printf("esp \n");
+                break;
+            case OR_EBP:
+                printf("ebp \n");
+                break;
+            case OR_ESI:
+                printf("esi \n");
+                break;
+            case OR_EDI:
+                printf("edi \n");
+                break;
+        }
         /* generate a generic store */
         gen_ldst_modrm(env, s, modrm, ot, reg, 1);
         break;
