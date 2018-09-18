@@ -1577,9 +1577,9 @@ static int check_refcounts_l2(BlockDriverState *bs, BdrvCheckResult *res,
         case QCOW2_CLUSTER_COMPRESSED:
             /* Compressed clusters don't have QCOW_OFLAG_COPIED */
             if (l2_entry & QCOW_OFLAG_COPIED) {
-                fprintf(stderr, "ERROR: coffset=0x%" PRIx64 ": "
+                fprintf(stderr, "ERROR: cluster %" PRId64 ": "
                     "copied flag must never be set for compressed "
-                    "clusters\n", l2_entry & s->cluster_offset_mask);
+                    "clusters\n", l2_entry >> s->cluster_bits);
                 l2_entry &= ~QCOW_OFLAG_COPIED;
                 res->corruptions++;
             }

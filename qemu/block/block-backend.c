@@ -1865,7 +1865,13 @@ void blk_op_unblock_all(BlockBackend *blk, Error *reason)
 
 AioContext *blk_get_aio_context(BlockBackend *blk)
 {
-    return bdrv_get_aio_context(blk_bs(blk));
+    BlockDriverState *bs = blk_bs(blk);
+
+    if (bs) {
+        return bdrv_get_aio_context(bs);
+    } else {
+        return qemu_get_aio_context();
+    }
 }
 
 static AioContext *blk_aiocb_get_aio_context(BlockAIOCB *acb)

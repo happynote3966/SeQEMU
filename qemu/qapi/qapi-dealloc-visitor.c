@@ -99,7 +99,7 @@ static void qapi_dealloc_type_anything(Visitor *v, const char *name,
                                        QObject **obj, Error **errp)
 {
     if (obj) {
-        qobject_unref(*obj);
+        qobject_decref(*obj);
     }
 }
 
@@ -107,7 +107,7 @@ static void qapi_dealloc_type_null(Visitor *v, const char *name,
                                    QNull **obj, Error **errp)
 {
     if (obj) {
-        qobject_unref(*obj);
+        QDECREF(*obj);
     }
 }
 

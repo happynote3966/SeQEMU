@@ -40,8 +40,8 @@ static QList *qom_list_types(const char *implements, bool abstract)
                " 'arguments': %p }", args);
     g_assert(qdict_haskey(resp, "return"));
     ret = qdict_get_qlist(resp, "return");
-    qobject_ref(ret);
-    qobject_unref(resp);
+    QINCREF(ret);
+    QDECREF(resp);
     return ret;
 }
 
@@ -54,7 +54,7 @@ static QDict *qom_type_index(QList *types)
     QLIST_FOREACH_ENTRY(types, e) {
         QDict *d = qobject_to(QDict, qlist_entry_obj(e));
         const char *name = qdict_get_str(d, "name");
-        qobject_ref(d);
+        QINCREF(d);
         qdict_put(index, name, d);
     }
     return index;
@@ -108,7 +108,7 @@ static void test_one_device(const char *type)
     resp = qmp("{'execute': 'device-list-properties',"
                " 'arguments': {'typename': %s}}",
                type);
-    qobject_unref(resp);
+    QDECREF(resp);
 
     help = hmp("device_add \"%s,help\"", type);
     g_free(help);
@@ -129,7 +129,7 @@ static void test_device_intro_list(void)
     qtest_start(common_args);
 
     types = device_type_list(true);
-    qobject_unref(types);
+    QDECREF(types);
 
     help = hmp("device_add help");
     g_free(help);
@@ -157,8 +157,8 @@ static void test_qom_list_parents(const char *parent)
         g_assert(qom_has_parent(index, name, parent));
     }
 
-    qobject_unref(types);
-    qobject_unref(index);
+    QDECREF(types);
+    QDECREF(index);
 }
 
 static void test_qom_list_fields(void)
@@ -187,8 +187,8 @@ static void test_qom_list_fields(void)
     test_qom_list_parents("device");
     test_qom_list_parents("sys-bus-device");
 
-    qobject_unref(all_types);
-    qobject_unref(non_abstract);
+    QDECREF(all_types);
+    QDECREF(non_abstract);
     qtest_end();
 }
 
@@ -222,7 +222,7 @@ static void test_device_intro_concrete(void)
         test_one_device(type);
     }
 
-    qobject_unref(types);
+    QDECREF(types);
     qtest_end();
 }
 
@@ -255,8 +255,8 @@ static void test_abstract_interfaces(void)
         g_assert(qdict_haskey(d, "abstract") && qdict_get_bool(d, "abstract"));
     }
 
-    qobject_unref(all_types);
-    qobject_unref(index);
+    QDECREF(all_types);
+    QDECREF(index);
     qtest_end();
 }
 

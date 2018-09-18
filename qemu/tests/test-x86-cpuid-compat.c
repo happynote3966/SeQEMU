@@ -19,7 +19,7 @@ static char *get_cpu0_qom_path(void)
 
     cpu0 = qobject_to(QDict, qlist_peek(ret));
     path = g_strdup(qdict_get_str(cpu0, "qom_path"));
-    qobject_unref(resp);
+    QDECREF(resp);
     return path;
 }
 
@@ -30,8 +30,8 @@ static QObject *qom_get(const char *path, const char *prop)
                       "                 'property': %s } }",
                       path, prop);
     QObject *ret = qdict_get(resp, "return");
-    qobject_ref(ret);
-    qobject_unref(resp);
+    qobject_incref(ret);
+    QDECREF(resp);
     return ret;
 }
 
@@ -41,7 +41,7 @@ static bool qom_get_bool(const char *path, const char *prop)
     QBool *value = qobject_to(QBool, qom_get(path, prop));
     bool b = qbool_get_bool(value);
 
-    qobject_unref(value);
+    QDECREF(value);
     return b;
 }
 #endif
@@ -66,7 +66,7 @@ static void test_cpuid_prop(const void *data)
     g_assert_cmpint(val, ==, args->expected_value);
     qtest_end();
 
-    qobject_unref(value);
+    QDECREF(value);
     g_free(path);
 }
 
@@ -142,8 +142,8 @@ static void test_feature_flag(const void *data)
 
     g_assert(!!(value & (1U << args->bitnr)) == args->expected_value);
 
-    qobject_unref(present);
-    qobject_unref(filtered);
+    QDECREF(present);
+    QDECREF(filtered);
     g_free(path);
 }
 

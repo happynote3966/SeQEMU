@@ -315,7 +315,7 @@ static int qcow_open(BlockDriverState *bs, QDict *options, int flags,
         goto fail;
     }
 
-    qobject_unref(encryptopts);
+    QDECREF(encryptopts);
     qapi_free_QCryptoBlockOpenOptions(crypto_opts);
     qemu_co_mutex_init(&s->lock);
     return 0;
@@ -326,7 +326,7 @@ static int qcow_open(BlockDriverState *bs, QDict *options, int flags,
     g_free(s->cluster_cache);
     g_free(s->cluster_data);
     qcrypto_block_free(s->crypto);
-    qobject_unref(encryptopts);
+    QDECREF(encryptopts);
     qapi_free_QCryptoBlockOpenOptions(crypto_opts);
     return ret;
 }
@@ -720,8 +720,7 @@ static coroutine_fn int qcow_co_readv(BlockDriverState *bs, int64_t sector_num,
 }
 
 static coroutine_fn int qcow_co_writev(BlockDriverState *bs, int64_t sector_num,
-                                       int nb_sectors, QEMUIOVector *qiov,
-                                       int flags)
+                          int nb_sectors, QEMUIOVector *qiov)
 {
     BDRVQcowState *s = bs->opaque;
     int index_in_cluster;
@@ -732,7 +731,6 @@ static coroutine_fn int qcow_co_writev(BlockDriverState *bs, int64_t sector_num,
     uint8_t *buf;
     void *orig_buf;
 
-    assert(!flags);
     s->cluster_cache_offset = -1; /* disable compressed cache */
 
     /* We must always copy the iov when encrypting, so we
@@ -936,6 +934,7 @@ static int coroutine_fn qcow_co_create(BlockdevCreateOptions *opts,
     ret = 0;
 exit:
     blk_unref(qcow_blk);
+    bdrv_unref(bs);
     qcrypto_block_free(crypto);
     return ret;
 }
@@ -997,7 +996,7 @@ static int coroutine_fn qcow_co_create_opts(const char *filename,
     qdict_put_str(qdict, "file", bs->node_name);
 
     qobj = qdict_crumple(qdict, errp);
-    qobject_unref(qdict);
+    QDECREF(qdict);
     qdict = qobject_to(QDict, qobj);
     if (qdict == NULL) {
         ret = -EINVAL;
@@ -1027,7 +1026,7 @@ static int coroutine_fn qcow_co_create_opts(const char *filename,
 
     ret = 0;
 fail:
-    qobject_unref(qdict);
+    QDECREF(qdict);
     bdrv_unref(bs);
     qapi_free_BlockdevCreateOptions(create_options);
     return ret;
@@ -1112,7 +1111,7 @@ qcow_co_pwritev_compressed(BlockDriverState *bs, uint64_t offset,
     if (ret != Z_STREAM_END || out_len >= s->cluster_size) {
         /* could not compress: write normal cluster */
         ret = qcow_co_writev(bs, offset >> BDRV_SECTOR_BITS,
-                             bytes >> BDRV_SECTOR_BITS, qiov, 0);
+                             bytes >> BDRV_SECTOR_BITS, qiov);
         if (ret < 0) {
             goto fail;
         }

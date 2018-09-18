@@ -567,8 +567,8 @@ static SocketAddress *sd_server_config(QDict *options, Error **errp)
 
 done:
     visit_free(iv);
-    qobject_unref(crumpled_server);
-    qobject_unref(server);
+    qobject_decref(crumpled_server);
+    QDECREF(server);
     return saddr;
 }
 
@@ -1883,7 +1883,7 @@ static int sd_create_prealloc(BlockdevOptionsSheepdog *location, int64_t size,
 
     if (local_err) {
         error_propagate(errp, local_err);
-        qobject_unref(obj);
+        qobject_decref(obj);
         return -EINVAL;
     }
 
@@ -1901,7 +1901,7 @@ static int sd_create_prealloc(BlockdevOptionsSheepdog *location, int64_t size,
     ret = sd_prealloc(bs, 0, size, errp);
 fail:
     bdrv_unref(bs);
-    qobject_unref(qdict);
+    QDECREF(qdict);
     return ret;
 }
 
@@ -1987,7 +1987,6 @@ static SheepdogRedundancy *parse_redundancy_str(const char *opt)
     } else {
         ret = qemu_strtol(n2, NULL, 10, &parity);
         if (ret < 0) {
-            g_free(redundancy);
             return NULL;
         }
 
@@ -2184,7 +2183,7 @@ static int coroutine_fn sd_co_create_opts(const char *filename, QemuOpts *opts,
     QDict *qdict, *location_qdict;
     QObject *crumpled;
     Visitor *v;
-    char *redundancy;
+    const char *redundancy;
     Error *local_err = NULL;
     int ret;
 
@@ -2227,7 +2226,7 @@ static int coroutine_fn sd_co_create_opts(const char *filename, QemuOpts *opts,
     v = qobject_input_visitor_new_keyval(crumpled);
     visit_type_BlockdevCreateOptions(v, NULL, &create_options, &local_err);
     visit_free(v);
-    qobject_unref(crumpled);
+    qobject_decref(crumpled);
 
     if (local_err) {
         error_propagate(errp, local_err);
@@ -2253,8 +2252,7 @@ static int coroutine_fn sd_co_create_opts(const char *filename, QemuOpts *opts,
     ret = sd_co_create(create_options, errp);
 fail:
     qapi_free_BlockdevCreateOptions(create_options);
-    qobject_unref(qdict);
-    g_free(redundancy);
+    QDECREF(qdict);
     return ret;
 }
 
@@ -2614,15 +2612,13 @@ static void sd_aio_complete(SheepdogAIOCB *acb)
 }
 
 static coroutine_fn int sd_co_writev(BlockDriverState *bs, int64_t sector_num,
-                                     int nb_sectors, QEMUIOVector *qiov,
-                                     int flags)
+                        int nb_sectors, QEMUIOVector *qiov)
 {
     SheepdogAIOCB acb;
     int ret;
     int64_t offset = (sector_num + nb_sectors) * BDRV_SECTOR_SIZE;
     BDRVSheepdogState *s = bs->opaque;
 
-    assert(!flags);
     if (offset > s->inode.vdi_size) {
         ret = sd_truncate(bs, offset, PREALLOC_MODE_OFF, NULL);
         if (ret < 0) {

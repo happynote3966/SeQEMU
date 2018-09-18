@@ -625,33 +625,37 @@ static uint32_t smc91c111_readb(void *opaque, hwaddr offset)
     return 0;
 }
 
-static uint64_t smc91c111_readfn(void *opaque, hwaddr addr, unsigned size)
+static void smc91c111_writew(void *opaque, hwaddr offset,
+                             uint32_t value)
 {
-    int i;
-    uint32_t val = 0;
+    smc91c111_writeb(opaque, offset, value & 0xff);
+    smc91c111_writeb(opaque, offset + 1, value >> 8);
+}
 
-    for (i = 0; i < size; i++) {
-        val |= smc91c111_readb(opaque, addr + i) << (i * 8);
-    }
+static void smc91c111_writel(void *opaque, hwaddr offset,
+                             uint32_t value)
+{
+    /* 32-bit writes to offset 0xc only actually write to the bank select
+       register (offset 0xe)  */
+    if (offset != 0xc)
+        smc91c111_writew(opaque, offset, value & 0xffff);
+    smc91c111_writew(opaque, offset + 2, value >> 16);
+}
+
+static uint32_t smc91c111_readw(void *opaque, hwaddr offset)
+{
+    uint32_t val;
+    val = smc91c111_readb(opaque, offset);
+    val |= smc91c111_readb(opaque, offset + 1) << 8;
     return val;
 }
 
-static void smc91c111_writefn(void *opaque, hwaddr addr,
-                               uint64_t value, unsigned size)
+static uint32_t smc91c111_readl(void *opaque, hwaddr offset)
 {
-    int i = 0;
-
-    /* 32-bit writes to offset 0xc only actually write to the bank select
-     * register (offset 0xe), so skip the first two bytes we would write.
-     */
-    if (addr == 0xc && size == 4) {
-        i += 2;
-    }
-
-    for (; i < size; i++) {
-        smc91c111_writeb(opaque, addr + i,
-                         extract32(value, i * 8, 8));
-    }
+    uint32_t val;
+    val = smc91c111_readw(opaque, offset);
+    val |= smc91c111_readw(opaque, offset + 2) << 16;
+    return val;
 }
 
 static int smc91c111_can_receive_nc(NetClientState *nc)
@@ -743,10 +747,10 @@ static const MemoryRegionOps smc91c111_mem_ops = {
     /* The special case for 32 bit writes to 0xc means we can't just
      * set .impl.min/max_access_size to 1, unfortunately
      */
-    .read = smc91c111_readfn,
-    .write = smc91c111_writefn,
-    .valid.min_access_size = 1,
-    .valid.max_access_size = 4,
+    .old_mmio = {
+        .read = { smc91c111_readb, smc91c111_readw, smc91c111_readl, },
+        .write = { smc91c111_writeb, smc91c111_writew, smc91c111_writel, },
+    },
     .endianness = DEVICE_NATIVE_ENDIAN,
 };
 

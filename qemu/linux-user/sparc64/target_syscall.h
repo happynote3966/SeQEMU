@@ -1,8 +1,6 @@
 #ifndef SPARC64_TARGET_SYSCALL_H
 #define SPARC64_TARGET_SYSCALL_H
 
-#include "../sparc/target_errno.h"
-
 struct target_pt_regs {
 	abi_ulong u_regs[16];
 	abi_ulong tstate;
@@ -12,7 +10,7 @@ struct target_pt_regs {
 	abi_ulong fprs;
 };
 
-#define UNAME_MACHINE "sparc64"
+#define UNAME_MACHINE "sun4u"
 #define UNAME_MINIMUM_RELEASE "2.6.32"
 
 /* SPARC kernels don't define this in their Kconfig, but they have the
@@ -31,4 +29,5 @@ static inline abi_ulong target_shmlba(CPUSPARCState *env)
 {
     return MAX(TARGET_PAGE_SIZE, 16 * 1024);
 }
+
 #endif /* SPARC64_TARGET_SYSCALL_H */

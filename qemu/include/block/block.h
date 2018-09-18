@@ -54,12 +54,8 @@ typedef enum {
     BDRV_REQ_FUA                = 0x10,
     BDRV_REQ_WRITE_COMPRESSED   = 0x20,
 
-    /* Signifies that this write request will not change the visible disk
-     * content. */
-    BDRV_REQ_WRITE_UNCHANGED    = 0x40,
-
     /* Mask of valid flags */
-    BDRV_REQ_MASK               = 0x7f,
+    BDRV_REQ_MASK               = 0x3f,
 } BdrvRequestFlags;
 
 typedef struct BlockSizes {
@@ -209,9 +205,6 @@ enum {
      * This permission (which is weaker than BLK_PERM_WRITE) is both enough and
      * required for writes to the block node when the caller promises that
      * the visible disk content doesn't change.
-     *
-     * As the BLK_PERM_WRITE permission is strictly stronger, either is
-     * sufficient to perform an unchanging write.
      */
     BLK_PERM_WRITE_UNCHANGED    = 0x04,
 
@@ -407,6 +400,7 @@ bool bdrv_is_read_only(BlockDriverState *bs);
 int bdrv_can_set_read_only(BlockDriverState *bs, bool read_only,
                            bool ignore_allow_rdw, Error **errp);
 int bdrv_set_read_only(BlockDriverState *bs, bool read_only, Error **errp);
+bool bdrv_is_writable(BlockDriverState *bs);
 bool bdrv_is_sg(BlockDriverState *bs);
 bool bdrv_is_inserted(BlockDriverState *bs);
 void bdrv_lock_medium(BlockDriverState *bs, bool locked);

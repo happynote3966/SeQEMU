@@ -1119,7 +1119,7 @@ static int coroutine_fn vpc_co_create_opts(const char *filename,
     qdict_put_str(qdict, "file", bs->node_name);
 
     qobj = qdict_crumple(qdict, errp);
-    qobject_unref(qdict);
+    QDECREF(qdict);
     qdict = qobject_to(QDict, qobj);
     if (qdict == NULL) {
         ret = -EINVAL;
@@ -1157,7 +1157,7 @@ static int coroutine_fn vpc_co_create_opts(const char *filename,
     ret = vpc_co_create(create_options, errp);
 
 fail:
-    qobject_unref(qdict);
+    QDECREF(qdict);
     bdrv_unref(bs);
     qapi_free_BlockdevCreateOptions(create_options);
     return ret;

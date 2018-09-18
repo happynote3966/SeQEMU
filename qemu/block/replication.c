@@ -260,8 +260,7 @@ out:
 static coroutine_fn int replication_co_writev(BlockDriverState *bs,
                                               int64_t sector_num,
                                               int remaining_sectors,
-                                              QEMUIOVector *qiov,
-                                              int flags)
+                                              QEMUIOVector *qiov)
 {
     BDRVReplicationState *s = bs->opaque;
     QEMUIOVector hd_qiov;
@@ -272,7 +271,6 @@ static coroutine_fn int replication_co_writev(BlockDriverState *bs,
     int ret;
     int64_t n;
 
-    assert(!flags);
     ret = replication_get_io_status(s);
     if (ret < 0) {
         goto out;

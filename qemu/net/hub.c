@@ -23,7 +23,8 @@
 
 /*
  * A hub broadcasts incoming packets to all its ports except the source port.
- * Hubs can be used to provide independent emulated network segments.
+ * Hubs can be used to provide independent network segments, also confusingly
+ * named the QEMU 'vlan' feature.
  */
 
 typedef struct NetHub NetHub;
@@ -344,10 +345,10 @@ void net_hub_check_clients(void)
             }
         }
         if (has_host_dev && !has_nic) {
-            warn_report("hub %d with no nics", hub->id);
+            warn_report("vlan %d with no nics", hub->id);
         }
         if (has_nic && !has_host_dev) {
-            warn_report("hub %d is not connected to host network", hub->id);
+            warn_report("vlan %d is not connected to host network", hub->id);
         }
     }
 }

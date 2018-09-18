@@ -27,7 +27,10 @@
  */
 
 #include "qemu/osdep.h"
-#include <libcacard.h>
+#include <eventt.h>
+#include <vevent.h>
+#include <vreader.h>
+#include <vcard_emul.h>
 
 #include "qemu/thread.h"
 #include "qemu/main-loop.h"

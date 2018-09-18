@@ -279,7 +279,7 @@ static BlockBackend *img_open_opts(const char *optstr,
         if (qdict_haskey(options, BDRV_OPT_FORCE_SHARE)
             && strcmp(qdict_get_str(options, BDRV_OPT_FORCE_SHARE), "on")) {
             error_report("--force-share/-U conflicts with image options");
-            qobject_unref(options);
+            QDECREF(options);
             return NULL;
         }
         qdict_put_str(options, BDRV_OPT_FORCE_SHARE, "on");
@@ -561,9 +561,9 @@ static void dump_json_image_check(ImageCheck *check, bool quiet)
     str = qobject_to_json_pretty(obj);
     assert(str != NULL);
     qprintf(quiet, "%s\n", qstring_get_str(str));
-    qobject_unref(obj);
+    qobject_decref(obj);
     visit_free(v);
-    qobject_unref(str);
+    QDECREF(str);
 }
 
 static void dump_human_image_check(ImageCheck *check, bool quiet)
@@ -1912,6 +1912,8 @@ static int convert_do_copy(ImgConvertState *s)
     return s->ret;
 }
 
+#define MAX_BUF_SECTORS 32768
+
 static int img_convert(int argc, char **argv)
 {
     int c, bs_i, flags, src_flags = 0;
@@ -2008,8 +2010,12 @@ static int img_convert(int argc, char **argv)
             int64_t sval;
 
             sval = cvtnum(optarg);
-            if (sval < 0) {
-                error_report("Invalid minimum zero buffer size for sparse output specified");
+            if (sval < 0 || sval & (BDRV_SECTOR_SIZE - 1) ||
+                sval / BDRV_SECTOR_SIZE > MAX_BUF_SECTORS) {
+                error_report("Invalid buffer size for sparse output specified. "
+                    "Valid sizes are multiples of %llu up to %llu. Select "
+                    "0 to disable sparse detection (fully allocates output).",
+                    BDRV_SECTOR_SIZE, MAX_BUF_SECTORS * BDRV_SECTOR_SIZE);
                 goto fail_getopt;
             }
 
@@ -2297,9 +2303,9 @@ static int img_convert(int argc, char **argv)
     }
 
     /* increase bufsectors from the default 4096 (2M) if opt_transfer
-     * or discard_alignment of the out_bs is greater. Limit to 32768 (16MB)
-     * as maximum. */
-    s.buf_sectors = MIN(32768,
+     * or discard_alignment of the out_bs is greater. Limit to
+     * MAX_BUF_SECTORS as maximum which is currently 32768 (16MB). */
+    s.buf_sectors = MIN(MAX_BUF_SECTORS,
                         MAX(s.buf_sectors,
                             MAX(out_bs->bl.opt_transfer >> BDRV_SECTOR_BITS,
                                 out_bs->bl.pdiscard_alignment >>
@@ -2384,9 +2390,9 @@ static void dump_json_image_info_list(ImageInfoList *list)
     str = qobject_to_json_pretty(obj);
     assert(str != NULL);
     printf("%s\n", qstring_get_str(str));
-    qobject_unref(obj);
+    qobject_decref(obj);
     visit_free(v);
-    qobject_unref(str);
+    QDECREF(str);
 }
 
 static void dump_json_image_info(ImageInfo *info)
@@ -2400,9 +2406,9 @@ static void dump_json_image_info(ImageInfo *info)
     str = qobject_to_json_pretty(obj);
     assert(str != NULL);
     printf("%s\n", qstring_get_str(str));
-    qobject_unref(obj);
+    qobject_decref(obj);
     visit_free(v);
-    qobject_unref(str);
+    QDECREF(str);
 }
 
 static void dump_human_image_info_list(ImageInfoList *list)
@@ -2827,7 +2833,7 @@ static int img_map(int argc, char **argv)
         int64_t n;
 
         /* Probe up to 1 GiB at a time.  */
-        n = QEMU_ALIGN_DOWN(MIN(1 << 30, length - offset), BDRV_SECTOR_SIZE);
+        n = MIN(1 << 30, length - offset);
         ret = get_block_status(bs, offset, n, &next);
 
         if (ret < 0) {
@@ -3191,6 +3197,9 @@ static int img_rebase(int argc, char **argv)
         }
 
         if (out_baseimg[0]) {
+            const char *overlay_filename;
+            char *out_real_path;
+
             options = qdict_new();
             if (out_basefmt) {
                 qdict_put_str(options, "driver", out_basefmt);
@@ -3199,8 +3208,26 @@ static int img_rebase(int argc, char **argv)
                 qdict_put_bool(options, BDRV_OPT_FORCE_SHARE, true);
             }
 
-            blk_new_backing = blk_new_open(out_baseimg, NULL,
+            overlay_filename = bs->exact_filename[0] ? bs->exact_filename
+                                                     : bs->filename;
+            out_real_path = g_malloc(PATH_MAX);
+
+            bdrv_get_full_backing_filename_from_filename(overlay_filename,
+                                                         out_baseimg,
+                                                         out_real_path,
+                                                         PATH_MAX,
+                                                         &local_err);
+            if (local_err) {
+                error_reportf_err(local_err,
+                                  "Could not resolve backing filename: ");
+                ret = -1;
+                g_free(out_real_path);
+                goto out;
+            }
+
+            blk_new_backing = blk_new_open(out_real_path, NULL,
                                            options, src_flags, &local_err);
+            g_free(out_real_path);
             if (!blk_new_backing) {
                 error_reportf_err(local_err,
                                   "Could not open new backing file '%s': ",
@@ -3381,7 +3408,7 @@ static int img_resize(int argc, char **argv)
     Error *err = NULL;
     int c, ret, relative;
     const char *filename, *fmt, *size;
-    int64_t n, total_size, current_size, new_size;
+    int64_t n, total_size, current_size;
     bool quiet = false;
     BlockBackend *blk = NULL;
     PreallocMode prealloc = PREALLOC_MODE_OFF;
@@ -3557,42 +3584,11 @@ static int img_resize(int argc, char **argv)
     }
 
     ret = blk_truncate(blk, total_size, prealloc, &err);
-    if (ret < 0) {
+    if (!ret) {
+        qprintf(quiet, "Image resized.\n");
+    } else {
         error_report_err(err);
-        goto out;
     }
-
-    new_size = blk_getlength(blk);
-    if (new_size < 0) {
-        error_report("Failed to verify truncated image length: %s",
-                     strerror(-new_size));
-        ret = -1;
-        goto out;
-    }
-
-    /* Some block drivers implement a truncation method, but only so
-     * the user can cause qemu to refresh the image's size from disk.
-     * The idea is that the user resizes the image outside of qemu and
-     * then invokes block_resize to inform qemu about it.
-     * (This includes iscsi and file-posix for device files.)
-     * Of course, that is not the behavior someone invoking
-     * qemu-img resize would find useful, so we catch that behavior
-     * here and tell the user. */
-    if (new_size != total_size && new_size == current_size) {
-        error_report("Image was not resized; resizing may not be supported "
-                     "for this image");
-        ret = -1;
-        goto out;
-    }
-
-    if (new_size != total_size) {
-        warn_report("Image should have been resized to %" PRIi64
-                    " bytes, but was resized to %" PRIi64 " bytes",
-                    total_size, new_size);
-    }
-
-    qprintf(quiet, "Image resized.\n");
-
 out:
     blk_unref(blk);
     if (ret) {
@@ -4488,9 +4484,9 @@ static void dump_json_block_measure_info(BlockMeasureInfo *info)
     str = qobject_to_json_pretty(obj);
     assert(str != NULL);
     printf("%s\n", qstring_get_str(str));
-    qobject_unref(obj);
+    qobject_decref(obj);
     visit_free(v);
-    qobject_unref(str);
+    QDECREF(str);
 }
 
 static int img_measure(int argc, char **argv)

@@ -43,23 +43,26 @@
  * first byte of the option name)
  *
  * The option name is delimited by delim (usually , or =) or the string end
- * and is copied into option. The caller is responsible for free'ing option
- * when no longer required.
+ * and is copied into buf. If the option name is longer than buf_size, it is
+ * truncated. buf is always zero terminated.
  *
  * The return value is the position of the delimiter/zero byte after the option
  * name in p.
  */
-static const char *get_opt_name(const char *p, char **option, char delim)
+const char *get_opt_name(char *buf, int buf_size, const char *p, char delim)
 {
-    char *offset = strchr(p, delim);
+    char *q;
 
-    if (offset) {
-        *option = g_strndup(p, offset - p);
-        return offset;
-    } else {
-        *option = g_strdup(p);
-        return p + strlen(p);
+    q = buf;
+    while (*p != '\0' && *p != delim) {
+        if (q && (q - buf) < buf_size - 1)
+            *q++ = *p;
+        p++;
     }
+    if (q)
+        *q = '\0';
+
+    return p;
 }
 
 /*
@@ -70,37 +73,25 @@ static const char *get_opt_name(const char *p, char **option, char delim)
  * delimiter is fixed to be comma which starts a new option. To specify an
  * option value that contains commas, double each comma.
  */
-const char *get_opt_value(const char *p, char **value)
+const char *get_opt_value(char *buf, int buf_size, const char *p)
 {
-    size_t capacity = 0, length;
-    const char *offset;
+    char *q;
 
-    *value = NULL;
-    while (1) {
-        offset = strchr(p, ',');
-        if (!offset) {
-            offset = p + strlen(p);
+    q = buf;
+    while (*p != '\0') {
+        if (*p == ',') {
+            if (*(p + 1) != ',')
+                break;
+            p++;
         }
-
-        length = offset - p;
-        if (*offset != '\0' && *(offset + 1) == ',') {
-            length++;
-        }
-        if (value) {
-            *value = g_renew(char, *value, capacity + length + 1);
-            strncpy(*value + capacity, p, length);
-            (*value)[capacity + length] = '\0';
-        }
-        capacity += length;
-        if (*offset == '\0' ||
-            *(offset + 1) != ',') {
-            break;
-        }
-
-        p += (offset - p) + 2;
+        if (q && (q - buf) < buf_size - 1)
+            *q++ = *p;
+        p++;
     }
+    if (q)
+        *q = '\0';
 
-    return offset;
+    return p;
 }
 
 static void parse_option_bool(const char *name, const char *value, bool *ret,
@@ -174,43 +165,50 @@ void parse_option_size(const char *name, const char *value,
 
 bool has_help_option(const char *param)
 {
+    size_t buflen = strlen(param) + 1;
+    char *buf = g_malloc(buflen);
     const char *p = param;
     bool result = false;
 
-    while (*p && !result) {
-        char *value;
-
-        p = get_opt_value(p, &value);
+    while (*p) {
+        p = get_opt_value(buf, buflen, p);
         if (*p) {
             p++;
         }
 
-        result = is_help_option(value);
-        g_free(value);
+        if (is_help_option(buf)) {
+            result = true;
+            goto out;
+        }
     }
 
+out:
+    g_free(buf);
     return result;
 }
 
-bool is_valid_option_list(const char *p)
+bool is_valid_option_list(const char *param)
 {
-    char *value = NULL;
-    bool result = false;
+    size_t buflen = strlen(param) + 1;
+    char *buf = g_malloc(buflen);
+    const char *p = param;
+    bool result = true;
 
     while (*p) {
-        p = get_opt_value(p, &value);
-        if ((*p && !*++p) ||
-            (!*value || *value == ',')) {
+        p = get_opt_value(buf, buflen, p);
+        if (*p && !*++p) {
+            result = false;
             goto out;
         }
 
-        g_free(value);
-        value = NULL;
+        if (!*buf || *buf == ',') {
+            result = false;
+            goto out;
+        }
     }
 
-    result = true;
 out:
-    g_free(value);
+    g_free(buf);
     return result;
 }
 
@@ -492,7 +490,7 @@ int qemu_opt_unset(QemuOpts *opts, const char *name)
     }
 }
 
-static void opt_set(QemuOpts *opts, const char *name, char *value,
+static void opt_set(QemuOpts *opts, const char *name, const char *value,
                     bool prepend, Error **errp)
 {
     QemuOpt *opt;
@@ -501,7 +499,6 @@ static void opt_set(QemuOpts *opts, const char *name, char *value,
 
     desc = find_desc_by_name(opts->list->desc, name);
     if (!desc && !opts_accepts_any(opts)) {
-        g_free(value);
         error_setg(errp, QERR_INVALID_PARAMETER, name);
         return;
     }
@@ -515,7 +512,8 @@ static void opt_set(QemuOpts *opts, const char *name, char *value,
         QTAILQ_INSERT_TAIL(&opts->head, opt, next);
     }
     opt->desc = desc;
-    opt->str = value;
+    opt->str = g_strdup(value);
+    assert(opt->str);
     qemu_opt_parse(opt, &local_err);
     if (local_err) {
         error_propagate(errp, local_err);
@@ -526,7 +524,7 @@ static void opt_set(QemuOpts *opts, const char *name, char *value,
 void qemu_opt_set(QemuOpts *opts, const char *name, const char *value,
                   Error **errp)
 {
-    opt_set(opts, name, g_strdup(value), false, errp);
+    opt_set(opts, name, value, false, errp);
 }
 
 void qemu_opt_set_bool(QemuOpts *opts, const char *name, bool val,
@@ -759,8 +757,7 @@ void qemu_opts_print(QemuOpts *opts, const char *separator)
 static void opts_do_parse(QemuOpts *opts, const char *params,
                           const char *firstname, bool prepend, Error **errp)
 {
-    char *option = NULL;
-    char *value = NULL;
+    char option[128], value[1024];
     const char *p,*pe,*pc;
     Error *local_err = NULL;
 
@@ -771,45 +768,39 @@ static void opts_do_parse(QemuOpts *opts, const char *params,
             /* found "foo,more" */
             if (p == params && firstname) {
                 /* implicitly named first option */
-                option = g_strdup(firstname);
-                p = get_opt_value(p, &value);
+                pstrcpy(option, sizeof(option), firstname);
+                p = get_opt_value(value, sizeof(value), p);
             } else {
                 /* option without value, probably a flag */
-                p = get_opt_name(p, &option, ',');
+                p = get_opt_name(option, sizeof(option), p, ',');
                 if (strncmp(option, "no", 2) == 0) {
                     memmove(option, option+2, strlen(option+2)+1);
-                    value = g_strdup("off");
+                    pstrcpy(value, sizeof(value), "off");
                 } else {
-                    value = g_strdup("on");
+                    pstrcpy(value, sizeof(value), "on");
                 }
             }
         } else {
             /* found "foo=bar,more" */
-            p = get_opt_name(p, &option, '=');
-            assert(*p == '=');
+            p = get_opt_name(option, sizeof(option), p, '=');
+            if (*p != '=') {
+                break;
+            }
             p++;
-            p = get_opt_value(p, &value);
+            p = get_opt_value(value, sizeof(value), p);
         }
         if (strcmp(option, "id") != 0) {
             /* store and parse */
             opt_set(opts, option, value, prepend, &local_err);
-            value = NULL;
             if (local_err) {
                 error_propagate(errp, local_err);
-                goto cleanup;
+                return;
             }
         }
         if (*p != ',') {
             break;
         }
-        g_free(option);
-        g_free(value);
-        option = value = NULL;
     }
-
- cleanup:
-    g_free(option);
-    g_free(value);
 }
 
 /**
@@ -828,7 +819,7 @@ static QemuOpts *opts_parse(QemuOptsList *list, const char *params,
                             bool permit_abbrev, bool defaults, Error **errp)
 {
     const char *firstname;
-    char *id = NULL;
+    char value[1024], *id = NULL;
     const char *p;
     QemuOpts *opts;
     Error *local_err = NULL;
@@ -837,9 +828,11 @@ static QemuOpts *opts_parse(QemuOptsList *list, const char *params,
     firstname = permit_abbrev ? list->implied_opt_name : NULL;
 
     if (strncmp(params, "id=", 3) == 0) {
-        get_opt_value(params + 3, &id);
+        get_opt_value(value, sizeof(value), params+3);
+        id = value;
     } else if ((p = strstr(params, ",id=")) != NULL) {
-        get_opt_value(p + 4, &id);
+        get_opt_value(value, sizeof(value), p+4);
+        id = value;
     }
 
     /*
@@ -851,7 +844,6 @@ static QemuOpts *opts_parse(QemuOptsList *list, const char *params,
      */
     assert(!defaults || list->merge_lists);
     opts = qemu_opts_create(list, id, !defaults, &local_err);
-    g_free(id);
     if (opts == NULL) {
         error_propagate(errp, local_err);
         return NULL;

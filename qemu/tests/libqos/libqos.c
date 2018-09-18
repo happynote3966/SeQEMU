@@ -100,14 +100,14 @@ void migrate(QOSState *from, QOSState *to, const char *uri)
     sub = qdict_get_qdict(rsp, "return");
     g_assert(qdict_haskey(sub, "running"));
     running = qdict_get_bool(sub, "running");
-    qobject_unref(rsp);
+    QDECREF(rsp);
 
     /* Issue the migrate command. */
     rsp = qtest_qmp(from->qts,
                     "{ 'execute': 'migrate', 'arguments': { 'uri': %s }}",
                     uri);
     g_assert(qdict_haskey(rsp, "return"));
-    qobject_unref(rsp);
+    QDECREF(rsp);
 
     /* Wait for STOP event, but only if we were running: */
     if (running) {
@@ -132,12 +132,12 @@ void migrate(QOSState *from, QOSState *to, const char *uri)
 
         /* "setup", "active", "completed", "failed", "cancelled" */
         if (strcmp(st, "completed") == 0) {
-            qobject_unref(rsp);
+            QDECREF(rsp);
             break;
         }
 
         if ((strcmp(st, "setup") == 0) || (strcmp(st, "active") == 0)) {
-            qobject_unref(rsp);
+            QDECREF(rsp);
             g_usleep(5000);
             continue;
         }

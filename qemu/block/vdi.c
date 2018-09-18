@@ -951,7 +951,7 @@ static int coroutine_fn vdi_co_create_opts(const char *filename, QemuOpts *opts,
     /* Create the vdi image (format layer) */
     ret = vdi_co_do_create(create_options, block_size, errp);
 done:
-    qobject_unref(qdict);
+    QDECREF(qdict);
     qapi_free_BlockdevCreateOptions(create_options);
     bdrv_unref(bs_file);
     return ret;

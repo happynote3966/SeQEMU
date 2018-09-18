@@ -18,9 +18,6 @@ static int cpu_load_old(QEMUFile *f, void *opaque, int version_id)
     unsigned int i, j;
     target_ulong sdr1;
     uint32_t fpscr;
-#if defined(TARGET_PPC64)
-    int32_t slb_nr;
-#endif
     target_ulong xer;
 
     for (i = 0; i < 32; i++)
@@ -52,7 +49,7 @@ static int cpu_load_old(QEMUFile *f, void *opaque, int version_id)
     qemu_get_sbe32s(f, &env->access_type);
 #if defined(TARGET_PPC64)
     qemu_get_betls(f, &env->spr[SPR_ASR]);
-    qemu_get_sbe32s(f, &slb_nr);
+    qemu_get_sbe32s(f, &env->slb_nr);
 #endif
     qemu_get_betls(f, &sdr1);
     for (i = 0; i < 32; i++)
@@ -149,15 +146,6 @@ static bool cpu_pre_2_8_migration(void *opaque, int version_id)
     return cpu->pre_2_8_migration;
 }
 
-#if defined(TARGET_PPC64)
-static bool cpu_pre_2_13_migration(void *opaque, int version_id)
-{
-    PowerPCCPU *cpu = opaque;
-
-    return cpu->pre_2_13_migration;
-}
-#endif
-
 static int cpu_pre_save(void *opaque)
 {
     PowerPCCPU *cpu = opaque;
@@ -219,11 +207,6 @@ static int cpu_pre_save(void *opaque)
         cpu->mig_insns_flags |= PPC_MEM_TLBIE;
         cpu->mig_insns_flags2 = env->insns_flags2 & insns_compat_mask2;
         cpu->mig_nb_BATs = env->nb_BATs;
-    }
-    if (cpu->pre_2_13_migration) {
-        if (cpu->hash64_opts) {
-            cpu->mig_slb_nr = cpu->hash64_opts->slb_size;
-        }
     }
 
     return 0;
@@ -500,7 +483,7 @@ static int slb_post_load(void *opaque, int version_id)
 
     /* We've pulled in the raw esid and vsid values from the migration
      * stream, but we need to recompute the page size pointers */
-    for (i = 0; i < cpu->hash64_opts->slb_size; i++) {
+    for (i = 0; i < env->slb_nr; i++) {
         if (ppc_store_slb(cpu, i, env->slb[i].esid, env->slb[i].vsid) < 0) {
             /* Migration source had bad values in its SLB */
             return -1;
@@ -517,7 +500,7 @@ static const VMStateDescription vmstate_slb = {
     .needed = slb_needed,
     .post_load = slb_post_load,
     .fields = (VMStateField[]) {
-        VMSTATE_INT32_TEST(mig_slb_nr, PowerPCCPU, cpu_pre_2_13_migration),
+        VMSTATE_INT32_EQUAL(env.slb_nr, PowerPCCPU, NULL),
         VMSTATE_SLB_ARRAY(env.slb, PowerPCCPU, MAX_SLB_ENTRIES),
         VMSTATE_END_OF_LIST()
     }

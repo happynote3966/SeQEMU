@@ -41,14 +41,7 @@
 #include <sys/prctl.h>
 #endif
 
-/*
- * Must set all three of these at once.
- * Legal combinations are              unset   by name   by uid
- */
-static struct passwd *user_pwd;    /*   NULL   non-NULL   NULL   */
-static uid_t user_uid = (uid_t)-1; /*   -1      -1        >=0    */
-static gid_t user_gid = (gid_t)-1; /*   -1      -1        >=0    */
-
+static struct passwd *user_pwd;
 static const char *chroot_dir;
 static int daemonize;
 static int daemon_pipe;
@@ -125,47 +118,20 @@ void os_set_proc_name(const char *s)
     /* Could rewrite argv[0] too, but that's a bit more complicated.
        This simple way is enough for `top'. */
     if (prctl(PR_SET_NAME, name)) {
-        error_report("unable to change process name: %s", strerror(errno));
+        perror("unable to change process name");
         exit(1);
     }
 #else
-    error_report("Change of process name not supported by your OS");
+    fprintf(stderr, "Change of process name not supported by your OS\n");
     exit(1);
 #endif
-}
-
-
-static bool os_parse_runas_uid_gid(const char *optarg)
-{
-    unsigned long lv;
-    const char *ep;
-    uid_t got_uid;
-    gid_t got_gid;
-    int rc;
-
-    rc = qemu_strtoul(optarg, &ep, 0, &lv);
-    got_uid = lv; /* overflow here is ID in C99 */
-    if (rc || *ep != ':' || got_uid != lv || got_uid == (uid_t)-1) {
-        return false;
-    }
-
-    rc = qemu_strtoul(ep + 1, 0, 0, &lv);
-    got_gid = lv; /* overflow here is ID in C99 */
-    if (rc || got_gid != lv || got_gid == (gid_t)-1) {
-        return false;
-    }
-
-    user_pwd = NULL;
-    user_uid = got_uid;
-    user_gid = got_gid;
-    return true;
 }
 
 /*
  * Parse OS specific command line options.
  * return 0 if option handled, -1 otherwise
  */
-int os_parse_cmd_args(int index, const char *optarg)
+void os_parse_cmd_args(int index, const char *optarg)
 {
     switch (index) {
 #ifdef CONFIG_SLIRP
@@ -178,13 +144,8 @@ int os_parse_cmd_args(int index, const char *optarg)
 #endif
     case QEMU_OPTION_runas:
         user_pwd = getpwnam(optarg);
-        if (user_pwd) {
-            user_uid = -1;
-            user_gid = -1;
-        } else if (!os_parse_runas_uid_gid(optarg)) {
-            error_report("User \"%s\" doesn't exist"
-                         " (and is not <uid>:<gid>)",
-                         optarg);
+        if (!user_pwd) {
+            fprintf(stderr, "User \"%s\" doesn't exist\n", optarg);
             exit(1);
         }
         break;
@@ -199,45 +160,27 @@ int os_parse_cmd_args(int index, const char *optarg)
         fips_set_state(true);
         break;
 #endif
-    default:
-        return -1;
     }
-
-    return 0;
 }
 
 static void change_process_uid(void)
 {
-    assert((user_uid == (uid_t)-1) || user_pwd == NULL);
-    assert((user_uid == (uid_t)-1) ==
-           (user_gid == (gid_t)-1));
-
-    if (user_pwd || user_uid != (uid_t)-1) {
-        gid_t intended_gid = user_pwd ? user_pwd->pw_gid : user_gid;
-        uid_t intended_uid = user_pwd ? user_pwd->pw_uid : user_uid;
-        if (setgid(intended_gid) < 0) {
-            error_report("Failed to setgid(%d)", intended_gid);
+    if (user_pwd) {
+        if (setgid(user_pwd->pw_gid) < 0) {
+            fprintf(stderr, "Failed to setgid(%d)\n", user_pwd->pw_gid);
             exit(1);
         }
-        if (user_pwd) {
-            if (initgroups(user_pwd->pw_name, user_pwd->pw_gid) < 0) {
-                error_report("Failed to initgroups(\"%s\", %d)",
-                        user_pwd->pw_name, user_pwd->pw_gid);
-                exit(1);
-            }
-        } else {
-            if (setgroups(1, &user_gid) < 0) {
-                error_report("Failed to setgroups(1, [%d])",
-                        user_gid);
-                exit(1);
-            }
+        if (initgroups(user_pwd->pw_name, user_pwd->pw_gid) < 0) {
+            fprintf(stderr, "Failed to initgroups(\"%s\", %d)\n",
+                    user_pwd->pw_name, user_pwd->pw_gid);
+            exit(1);
         }
-        if (setuid(intended_uid) < 0) {
-            error_report("Failed to setuid(%d)", intended_uid);
+        if (setuid(user_pwd->pw_uid) < 0) {
+            fprintf(stderr, "Failed to setuid(%d)\n", user_pwd->pw_uid);
             exit(1);
         }
         if (setuid(0) != -1) {
-            error_report("Dropping privileges failed");
+            fprintf(stderr, "Dropping privileges failed\n");
             exit(1);
         }
     }
@@ -247,11 +190,11 @@ static void change_root(void)
 {
     if (chroot_dir) {
         if (chroot(chroot_dir) < 0) {
-            error_report("chroot failed");
+            fprintf(stderr, "chroot failed\n");
             exit(1);
         }
         if (chdir("/")) {
-            error_report("not able to chdir to /: %s", strerror(errno));
+            perror("not able to chdir to /");
             exit(1);
         }
     }
@@ -313,7 +256,7 @@ void os_setup_post(void)
 
     if (daemonize) {
         if (chdir("/")) {
-            error_report("not able to chdir to /: %s", strerror(errno));
+            perror("not able to chdir to /");
             exit(1);
         }
         TFR(fd = qemu_open("/dev/null", O_RDWR));
@@ -387,7 +330,7 @@ int os_mlock(void)
 
     ret = mlockall(MCL_CURRENT | MCL_FUTURE);
     if (ret < 0) {
-        error_report("mlockall: %s", strerror(errno));
+        perror("mlockall");
     }
 
     return ret;

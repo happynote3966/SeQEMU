@@ -86,7 +86,7 @@ static int openfile(char *name, int flags, bool writethrough, bool force_share,
 
     if (qemuio_blk) {
         error_report("file open already, try 'help close'");
-        qobject_unref(opts);
+        QDECREF(opts);
         return 1;
     }
 
@@ -97,7 +97,7 @@ static int openfile(char *name, int flags, bool writethrough, bool force_share,
         if (qdict_haskey(opts, BDRV_OPT_FORCE_SHARE)
             && strcmp(qdict_get_str(opts, BDRV_OPT_FORCE_SHARE), "on")) {
             error_report("-U conflicts with image options");
-            qobject_unref(opts);
+            QDECREF(opts);
             return 1;
         }
         qdict_put_str(opts, BDRV_OPT_FORCE_SHARE, "on");
@@ -243,7 +243,7 @@ static int open_f(BlockBackend *blk, int argc, char **argv)
     } else if (optind == argc) {
         openfile(NULL, flags, writethrough, force_share, opts);
     } else {
-        qobject_unref(opts);
+        QDECREF(opts);
         qemuio_command_usage(&open_cmd);
     }
     return 0;

@@ -305,7 +305,7 @@ static void prop_get_fdt(Object *obj, Visitor *v, const char *name,
 
     if (!drc->fdt) {
         visit_type_null(v, NULL, &null, errp);
-        qobject_unref(null);
+        QDECREF(null);
         return;
     }
 

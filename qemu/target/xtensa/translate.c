@@ -1061,7 +1061,8 @@ void gen_intermediate_code(CPUState *cs, TranslationBlock *tb)
     int insn_count = 0;
     int max_insns = tb_cflags(tb) & CF_COUNT_MASK;
     uint32_t pc_start = tb->pc;
-    uint32_t page_start = pc_start & TARGET_PAGE_MASK;
+    uint32_t next_page_start =
+        (pc_start & TARGET_PAGE_MASK) + TARGET_PAGE_SIZE;
 
     if (max_insns == 0) {
         max_insns = CF_COUNT_MASK;
@@ -1161,9 +1162,9 @@ void gen_intermediate_code(CPUState *cs, TranslationBlock *tb)
         }
     } while (dc.is_jmp == DISAS_NEXT &&
             insn_count < max_insns &&
-            dc.pc - page_start < TARGET_PAGE_SIZE &&
-            dc.pc - page_start + xtensa_insn_len(env, &dc) <= TARGET_PAGE_SIZE
-            && !tcg_op_buf_full());
+            dc.pc < next_page_start &&
+            dc.pc + xtensa_insn_len(env, &dc) <= next_page_start &&
+            !tcg_op_buf_full());
 done:
     reset_sar_tracker(&dc);
     if (dc.icount) {
@@ -1526,8 +1527,10 @@ static void translate_clamps(DisasContext *dc, const uint32_t arg[],
         TCGv_i32 tmp1 = tcg_const_i32(-1u << arg[2]);
         TCGv_i32 tmp2 = tcg_const_i32((1 << arg[2]) - 1);
 
-        tcg_gen_smax_i32(tmp1, tmp1, cpu_R[arg[1]]);
-        tcg_gen_smin_i32(cpu_R[arg[0]], tmp1, tmp2);
+        tcg_gen_movcond_i32(TCG_COND_GT, tmp1,
+                            cpu_R[arg[1]], tmp1, cpu_R[arg[1]], tmp1);
+        tcg_gen_movcond_i32(TCG_COND_LT, cpu_R[arg[0]],
+                            tmp1, tmp2, tmp1, tmp2);
         tcg_temp_free(tmp1);
         tcg_temp_free(tmp2);
     }
@@ -1852,35 +1855,13 @@ static void translate_memw(DisasContext *dc, const uint32_t arg[],
     tcg_gen_mb(TCG_BAR_SC | TCG_MO_ALL);
 }
 
-static void translate_smin(DisasContext *dc, const uint32_t arg[],
-                           const uint32_t par[])
+static void translate_minmax(DisasContext *dc, const uint32_t arg[],
+                             const uint32_t par[])
 {
     if (gen_window_check3(dc, arg[0], arg[1], arg[2])) {
-        tcg_gen_smin_i32(cpu_R[arg[0]], cpu_R[arg[1]], cpu_R[arg[2]]);
-    }
-}
-
-static void translate_umin(DisasContext *dc, const uint32_t arg[],
-                           const uint32_t par[])
-{
-    if (gen_window_check3(dc, arg[0], arg[1], arg[2])) {
-        tcg_gen_umin_i32(cpu_R[arg[0]], cpu_R[arg[1]], cpu_R[arg[2]]);
-    }
-}
-
-static void translate_smax(DisasContext *dc, const uint32_t arg[],
-                           const uint32_t par[])
-{
-    if (gen_window_check3(dc, arg[0], arg[1], arg[2])) {
-        tcg_gen_smax_i32(cpu_R[arg[0]], cpu_R[arg[1]], cpu_R[arg[2]]);
-    }
-}
-
-static void translate_umax(DisasContext *dc, const uint32_t arg[],
-                           const uint32_t par[])
-{
-    if (gen_window_check3(dc, arg[0], arg[1], arg[2])) {
-        tcg_gen_umax_i32(cpu_R[arg[0]], cpu_R[arg[1]], cpu_R[arg[2]]);
+        tcg_gen_movcond_i32(par[0], cpu_R[arg[0]],
+                            cpu_R[arg[1]], cpu_R[arg[2]],
+                            cpu_R[arg[1]], cpu_R[arg[2]]);
     }
 }
 
@@ -3003,19 +2984,23 @@ static const XtensaOpcodeOps core_ops[] = {
         .par = (const uint32_t[]){TCG_COND_NE},
     }, {
         .name = "max",
-        .translate = translate_smax,
+        .translate = translate_minmax,
+        .par = (const uint32_t[]){TCG_COND_GE},
     }, {
         .name = "maxu",
-        .translate = translate_umax,
+        .translate = translate_minmax,
+        .par = (const uint32_t[]){TCG_COND_GEU},
     }, {
         .name = "memw",
         .translate = translate_memw,
     }, {
         .name = "min",
-        .translate = translate_smin,
+        .translate = translate_minmax,
+        .par = (const uint32_t[]){TCG_COND_LT},
     }, {
         .name = "minu",
-        .translate = translate_umin,
+        .translate = translate_minmax,
+        .par = (const uint32_t[]){TCG_COND_LTU},
     }, {
         .name = "mov",
         .translate = translate_mov,

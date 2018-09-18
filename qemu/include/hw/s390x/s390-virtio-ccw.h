@@ -53,4 +53,6 @@ bool cpu_model_allowed(void);
  */
 bool css_migration_enabled(void);
 
+void subsystem_reset(void);
+
 #endif

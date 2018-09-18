@@ -112,14 +112,15 @@ static const AIOCBInfo win32_aiocb_info = {
 
 BlockAIOCB *win32_aio_submit(BlockDriverState *bs,
         QEMUWin32AIOState *aio, HANDLE hfile,
-        uint64_t offset, uint64_t bytes, QEMUIOVector *qiov,
+        int64_t sector_num, QEMUIOVector *qiov, int nb_sectors,
         BlockCompletionFunc *cb, void *opaque, int type)
 {
     struct QEMUWin32AIOCB *waiocb;
+    uint64_t offset = sector_num * 512;
     DWORD rc;
 
     waiocb = qemu_aio_get(&win32_aiocb_info, bs, cb, opaque);
-    waiocb->nbytes = bytes;
+    waiocb->nbytes = nb_sectors * 512;
     waiocb->qiov = qiov;
     waiocb->is_read = (type == QEMU_AIO_READ);
 

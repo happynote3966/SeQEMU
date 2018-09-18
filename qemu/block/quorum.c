@@ -115,7 +115,6 @@ struct QuorumAIOCB {
     /* Request metadata */
     uint64_t offset;
     uint64_t bytes;
-    int flags;
 
     QEMUIOVector *qiov;         /* calling IOV */
 
@@ -158,8 +157,7 @@ static bool quorum_64bits_compare(QuorumVoteValue *a, QuorumVoteValue *b)
 static QuorumAIOCB *quorum_aio_get(BlockDriverState *bs,
                                    QEMUIOVector *qiov,
                                    uint64_t offset,
-                                   uint64_t bytes,
-                                   int flags)
+                                   uint64_t bytes)
 {
     BDRVQuorumState *s = bs->opaque;
     QuorumAIOCB *acb = g_new(QuorumAIOCB, 1);
@@ -170,7 +168,6 @@ static QuorumAIOCB *quorum_aio_get(BlockDriverState *bs,
         .bs                 = bs,
         .offset             = offset,
         .bytes              = bytes,
-        .flags              = flags,
         .qiov               = qiov,
         .votes.compare      = quorum_sha256_compare,
         .votes.vote_list    = QLIST_HEAD_INITIALIZER(acb.votes.vote_list),
@@ -274,11 +271,9 @@ static void quorum_rewrite_entry(void *opaque)
     BDRVQuorumState *s = acb->bs->opaque;
 
     /* Ignore any errors, it's just a correction attempt for already
-     * corrupted data.
-     * Mask out BDRV_REQ_WRITE_UNCHANGED because this overwrites the
-     * area with different data from the other children. */
+     * corrupted data. */
     bdrv_co_pwritev(s->children[co->idx], acb->offset, acb->bytes,
-                    acb->qiov, acb->flags & ~BDRV_REQ_WRITE_UNCHANGED);
+                    acb->qiov, 0);
 
     /* Wake up the caller after the last rewrite */
     acb->rewrite_count--;
@@ -678,7 +673,7 @@ static int quorum_co_preadv(BlockDriverState *bs, uint64_t offset,
                             uint64_t bytes, QEMUIOVector *qiov, int flags)
 {
     BDRVQuorumState *s = bs->opaque;
-    QuorumAIOCB *acb = quorum_aio_get(bs, qiov, offset, bytes, flags);
+    QuorumAIOCB *acb = quorum_aio_get(bs, qiov, offset, bytes);
     int ret;
 
     acb->is_read = true;
@@ -704,7 +699,7 @@ static void write_quorum_entry(void *opaque)
 
     sacb->bs = s->children[i]->bs;
     sacb->ret = bdrv_co_pwritev(s->children[i], acb->offset, acb->bytes,
-                                acb->qiov, acb->flags);
+                                acb->qiov, 0);
     if (sacb->ret == 0) {
         acb->success_count++;
     } else {
@@ -724,7 +719,7 @@ static int quorum_co_pwritev(BlockDriverState *bs, uint64_t offset,
                              uint64_t bytes, QEMUIOVector *qiov, int flags)
 {
     BDRVQuorumState *s = bs->opaque;
-    QuorumAIOCB *acb = quorum_aio_get(bs, qiov, offset, bytes, flags);
+    QuorumAIOCB *acb = quorum_aio_get(bs, qiov, offset, bytes);
     int i, ret;
 
     for (i = 0; i < s->num_children; i++) {
@@ -966,8 +961,6 @@ static int quorum_open(BlockDriverState *bs, QDict *options, int flags,
     }
     s->next_child_index = s->num_children;
 
-    bs->supported_write_flags = BDRV_REQ_WRITE_UNCHANGED;
-
     g_free(opened);
     goto exit;
 
@@ -1089,8 +1082,8 @@ static void quorum_refresh_filename(BlockDriverState *bs, QDict *options)
 
     children = qlist_new();
     for (i = 0; i < s->num_children; i++) {
-        qlist_append(children,
-                     qobject_ref(s->children[i]->bs->full_open_options));
+        QINCREF(s->children[i]->bs->full_open_options);
+        qlist_append(children, s->children[i]->bs->full_open_options);
     }
 
     opts = qdict_new();

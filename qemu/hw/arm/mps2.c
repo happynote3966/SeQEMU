@@ -230,6 +230,7 @@ static void mps2_common_init(MachineState *machine)
             static const hwaddr uartbase[] = {0x40004000, 0x40005000,
                                               0x40006000, 0x40007000,
                                               0x40009000};
+            Chardev *uartchr = i < MAX_SERIAL_PORTS ? serial_hds[i] : NULL;
             /* RX irq number; TX irq is always one greater */
             static const int uartirq[] = {0, 2, 4, 18, 20};
             qemu_irq txovrint = NULL, rxovrint = NULL;
@@ -244,7 +245,7 @@ static void mps2_common_init(MachineState *machine)
                                   qdev_get_gpio_in(armv7m, uartirq[i]),
                                   txovrint, rxovrint,
                                   NULL,
-                                  serial_hd(i), SYSCLK_FRQ);
+                                  uartchr, SYSCLK_FRQ);
         }
         break;
     }
@@ -269,6 +270,7 @@ static void mps2_common_init(MachineState *machine)
             static const hwaddr uartbase[] = {0x40004000, 0x40005000,
                                               0x4002c000, 0x4002d000,
                                               0x4002e000};
+            Chardev *uartchr = i < MAX_SERIAL_PORTS ? serial_hds[i] : NULL;
             Object *txrx_orgate;
             DeviceState *txrx_orgate_dev;
 
@@ -285,7 +287,7 @@ static void mps2_common_init(MachineState *machine)
                                   qdev_get_gpio_in(orgate_dev, i * 2),
                                   qdev_get_gpio_in(orgate_dev, i * 2 + 1),
                                   NULL,
-                                  serial_hd(i), SYSCLK_FRQ);
+                                  uartchr, SYSCLK_FRQ);
         }
         break;
     }

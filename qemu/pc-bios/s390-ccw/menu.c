@@ -158,7 +158,7 @@ static void boot_menu_prompt(bool retry)
     }
 }
 
-static int get_boot_index(bool *valid_entries)
+static int get_boot_index(int entries)
 {
     int boot_index;
     bool retry = false;
@@ -168,8 +168,7 @@ static int get_boot_index(bool *valid_entries)
         boot_menu_prompt(retry);
         boot_index = get_index();
         retry = true;
-    } while (boot_index < 0 || boot_index >= MAX_BOOT_ENTRIES ||
-             !valid_entries[boot_index]);
+    } while (boot_index < 0 || boot_index >= entries);
 
     sclp_print("\nBooting entry #");
     sclp_print(uitoa(boot_index, tmp, sizeof(tmp)));
@@ -177,8 +176,7 @@ static int get_boot_index(bool *valid_entries)
     return boot_index;
 }
 
-/* Returns the entry number that was printed */
-static int zipl_print_entry(const char *data, size_t len)
+static void zipl_println(const char *data, size_t len)
 {
     char buf[len + 2];
 
@@ -187,15 +185,12 @@ static int zipl_print_entry(const char *data, size_t len)
     buf[len + 1] = '\0';
 
     sclp_print(buf);
-
-    return buf[0] == ' ' ? atoui(buf + 1) : atoui(buf);
 }
 
 int menu_get_zipl_boot_index(const char *menu_data)
 {
     size_t len;
-    int entry;
-    bool valid_entries[MAX_BOOT_ENTRIES] = {false};
+    int entries;
     uint16_t zipl_flag = *(uint16_t *)(menu_data - ZIPL_FLAG_OFFSET);
     uint16_t zipl_timeout = *(uint16_t *)(menu_data - ZIPL_TIMEOUT_OFFSET);
 
@@ -207,51 +202,34 @@ int menu_get_zipl_boot_index(const char *menu_data)
         timeout = zipl_timeout * 1000;
     }
 
-    /* Print banner */
-    sclp_print("s390-ccw zIPL Boot Menu\n\n");
-    menu_data += strlen(menu_data) + 1;
-
-    /* Print entries */
-    while (*menu_data) {
+    /* Print and count all menu items, including the banner */
+    for (entries = 0; *menu_data; entries++) {
         len = strlen(menu_data);
-        entry = zipl_print_entry(menu_data, len);
+        zipl_println(menu_data, len);
         menu_data += len + 1;
 
-        valid_entries[entry] = true;
-
-        if (entry == 0) {
+        if (entries < 2) {
             sclp_print("\n");
         }
     }
 
     sclp_print("\n");
-    return get_boot_index(valid_entries);
+    return get_boot_index(entries - 1); /* subtract 1 to exclude banner */
 }
 
-int menu_get_enum_boot_index(bool *valid_entries)
+
+int menu_get_enum_boot_index(int entries)
 {
-    char tmp[3];
-    int i;
+    char tmp[4];
 
-    sclp_print("s390-ccw Enumerated Boot Menu.\n\n");
+    sclp_print("s390x Enumerated Boot Menu.\n\n");
 
-    for (i = 0; i < MAX_BOOT_ENTRIES; i++) {
-        if (valid_entries[i]) {
-            if (i < 10) {
-                sclp_print(" ");
-            }
-            sclp_print("[");
-            sclp_print(uitoa(i, tmp, sizeof(tmp)));
-            sclp_print("]");
-            if (i == 0) {
-                sclp_print(" default\n");
-            }
-            sclp_print("\n");
-        }
-    }
+    sclp_print(uitoa(entries, tmp, sizeof(tmp)));
+    sclp_print(" entries detected. Select from boot index 0 to ");
+    sclp_print(uitoa(entries - 1, tmp, sizeof(tmp)));
+    sclp_print(".\n\n");
 
-    sclp_print("\n");
-    return get_boot_index(valid_entries);
+    return get_boot_index(entries);
 }
 
 void menu_set_parms(uint8_t boot_menu_flag, uint32_t boot_menu_timeout)

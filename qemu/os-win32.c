@@ -93,9 +93,9 @@ void os_set_line_buffering(void)
  * Parse OS specific command line options.
  * return 0 if option handled, -1 otherwise
  */
-int os_parse_cmd_args(int index, const char *optarg)
+void os_parse_cmd_args(int index, const char *optarg)
 {
-    return -1;
+    return;
 }
 
 int qemu_create_pidfile(const char *filename)

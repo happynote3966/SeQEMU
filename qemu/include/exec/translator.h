@@ -58,7 +58,6 @@ typedef enum DisasJumpType {
  *           disassembly).
  * @is_jmp: What instruction to disassemble next.
  * @num_insns: Number of translated instructions (including current).
- * @max_insns: Maximum number of instructions to be translated in this TB.
  * @singlestep_enabled: "Hardware" single stepping enabled.
  *
  * Architecture-agnostic disassembly context.
@@ -68,8 +67,7 @@ typedef struct DisasContextBase {
     target_ulong pc_first;
     target_ulong pc_next;
     DisasJumpType is_jmp;
-    int num_insns;
-    int max_insns;
+    unsigned int num_insns;
     bool singlestep_enabled;
 } DisasContextBase;
 
@@ -78,6 +76,7 @@ typedef struct DisasContextBase {
  * @init_disas_context:
  *      Initialize the target-specific portions of DisasContext struct.
  *      The generic DisasContextBase has already been initialized.
+ *      Return max_insns, modified as necessary by db->tb->flags.
  *
  * @tb_start:
  *      Emit any code required before the start of the main loop,
@@ -107,7 +106,8 @@ typedef struct DisasContextBase {
  *      Print instruction disassembly to log.
  */
 typedef struct TranslatorOps {
-    void (*init_disas_context)(DisasContextBase *db, CPUState *cpu);
+    int (*init_disas_context)(DisasContextBase *db, CPUState *cpu,
+                              int max_insns);
     void (*tb_start)(DisasContextBase *db, CPUState *cpu);
     void (*insn_start)(DisasContextBase *db, CPUState *cpu);
     bool (*breakpoint_check)(DisasContextBase *db, CPUState *cpu,

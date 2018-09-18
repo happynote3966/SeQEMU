@@ -213,41 +213,28 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
         break;
     }
     case CSR_MINSTRET:
-        /* minstret is WARL so unsupported writes are ignored */
-        break;
+        qemu_log_mask(LOG_UNIMP, "CSR_MINSTRET: write not implemented");
+        goto do_illegal;
     case CSR_MCYCLE:
-        /* mcycle is WARL so unsupported writes are ignored */
-        break;
-#if defined(TARGET_RISCV32)
+        qemu_log_mask(LOG_UNIMP, "CSR_MCYCLE: write not implemented");
+        goto do_illegal;
     case CSR_MINSTRETH:
-        /* minstreth is WARL so unsupported writes are ignored */
-        break;
+        qemu_log_mask(LOG_UNIMP, "CSR_MINSTRETH: write not implemented");
+        goto do_illegal;
     case CSR_MCYCLEH:
-        /* mcycleh is WARL so unsupported writes are ignored */
-        break;
-#endif
+        qemu_log_mask(LOG_UNIMP, "CSR_MCYCLEH: write not implemented");
+        goto do_illegal;
     case CSR_MUCOUNTEREN:
-        if (env->priv_ver <= PRIV_VERSION_1_09_1) {
-            env->scounteren = val_to_write;
-            break;
-        } else {
-            goto do_illegal;
-        }
+        env->mucounteren = val_to_write;
+        break;
     case CSR_MSCOUNTEREN:
-        if (env->priv_ver <= PRIV_VERSION_1_09_1) {
-            env->mcounteren = val_to_write;
-            break;
-        } else {
-            goto do_illegal;
-        }
+        env->mscounteren = val_to_write;
+        break;
     case CSR_SSTATUS: {
         target_ulong ms = env->mstatus;
         target_ulong mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UIE
             | SSTATUS_UPIE | SSTATUS_SPP | SSTATUS_FS | SSTATUS_XS
-            | SSTATUS_SUM | SSTATUS_SD;
-        if (env->priv_ver >= PRIV_VERSION_1_10_0) {
-            mask |= SSTATUS_MXR;
-        }
+            | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_SD;
         ms = (ms & ~mask) | (val_to_write & mask);
         csr_write_helper(env, ms, CSR_MSTATUS);
         break;
@@ -268,7 +255,7 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
     }
     case CSR_SATP: /* CSR_SPTBR */ {
         if (!riscv_feature(env, RISCV_FEATURE_MMU)) {
-            break;
+            goto do_illegal;
         }
         if (env->priv_ver <= PRIV_VERSION_1_09_1 && (val_to_write ^ env->sptbr))
         {
@@ -289,20 +276,15 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
         env->sepc = val_to_write;
         break;
     case CSR_STVEC:
-        /* bits [1:0] encode mode; 0 = direct, 1 = vectored, 2 >= reserved */
-        if ((val_to_write & 3) == 0) {
-            env->stvec = val_to_write >> 2 << 2;
-        } else {
+        if (val_to_write & 1) {
             qemu_log_mask(LOG_UNIMP, "CSR_STVEC: vectored traps not supported");
-        }
-        break;
-    case CSR_SCOUNTEREN:
-        if (env->priv_ver >= PRIV_VERSION_1_10_0) {
-            env->scounteren = val_to_write;
-            break;
-        } else {
             goto do_illegal;
         }
+        env->stvec = val_to_write >> 2 << 2;
+        break;
+    case CSR_SCOUNTEREN:
+        env->scounteren = val_to_write;
+        break;
     case CSR_SSCRATCH:
         env->sscratch = val_to_write;
         break;
@@ -316,20 +298,15 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
         env->mepc = val_to_write;
         break;
     case CSR_MTVEC:
-        /* bits [1:0] indicate mode; 0 = direct, 1 = vectored, 2 >= reserved */
-        if ((val_to_write & 3) == 0) {
-            env->mtvec = val_to_write >> 2 << 2;
-        } else {
+        if (val_to_write & 1) {
             qemu_log_mask(LOG_UNIMP, "CSR_MTVEC: vectored traps not supported");
-        }
-        break;
-    case CSR_MCOUNTEREN:
-        if (env->priv_ver >= PRIV_VERSION_1_10_0) {
-            env->mcounteren = val_to_write;
-            break;
-        } else {
             goto do_illegal;
         }
+        env->mtvec = val_to_write >> 2 << 2;
+        break;
+    case CSR_MCOUNTEREN:
+        env->mcounteren = val_to_write;
+        break;
     case CSR_MSCRATCH:
         env->mscratch = val_to_write;
         break;
@@ -339,9 +316,10 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
     case CSR_MBADADDR:
         env->mbadaddr = val_to_write;
         break;
-    case CSR_MISA:
-        /* misa is WARL so unsupported writes are ignored */
-        break;
+    case CSR_MISA: {
+        qemu_log_mask(LOG_UNIMP, "CSR_MISA: misa writes not supported");
+        goto do_illegal;
+    }
     case CSR_PMPCFG0:
     case CSR_PMPCFG1:
     case CSR_PMPCFG2:
@@ -366,8 +344,6 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
     case CSR_PMPADDR15:
        pmpaddr_csr_write(env, csrno - CSR_PMPADDR0, val_to_write);
        break;
-#endif
-#if !defined(CONFIG_USER_ONLY)
     do_illegal:
 #endif
     default:
@@ -383,8 +359,8 @@ void csr_write_helper(CPURISCVState *env, target_ulong val_to_write,
 target_ulong csr_read_helper(CPURISCVState *env, target_ulong csrno)
 {
 #ifndef CONFIG_USER_ONLY
-    target_ulong ctr_en = env->priv == PRV_U ? env->scounteren :
-                          env->priv == PRV_S ? env->mcounteren : -1U;
+    target_ulong ctr_en = env->priv == PRV_U ? env->mucounteren :
+                   env->priv == PRV_S ? env->mscounteren : -1U;
 #else
     target_ulong ctr_en = -1;
 #endif
@@ -437,67 +413,35 @@ target_ulong csr_read_helper(CPURISCVState *env, target_ulong csrno)
     case CSR_INSTRET:
     case CSR_CYCLE:
         if (ctr_ok) {
-#if !defined(CONFIG_USER_ONLY)
-            if (use_icount) {
-                return cpu_get_icount();
-            } else {
-                return cpu_get_host_ticks();
-            }
-#else
             return cpu_get_host_ticks();
-#endif
         }
         break;
 #if defined(TARGET_RISCV32)
     case CSR_INSTRETH:
     case CSR_CYCLEH:
         if (ctr_ok) {
-#if !defined(CONFIG_USER_ONLY)
-            if (use_icount) {
-                return cpu_get_icount() >> 32;
-            } else {
-                return cpu_get_host_ticks() >> 32;
-            }
-#else
             return cpu_get_host_ticks() >> 32;
-#endif
         }
         break;
 #endif
 #ifndef CONFIG_USER_ONLY
     case CSR_MINSTRET:
     case CSR_MCYCLE:
-        if (use_icount) {
-            return cpu_get_icount();
-        } else {
-            return cpu_get_host_ticks();
-        }
+        return cpu_get_host_ticks();
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
 #if defined(TARGET_RISCV32)
-        if (use_icount) {
-            return cpu_get_icount() >> 32;
-        } else {
-            return cpu_get_host_ticks() >> 32;
-        }
+        return cpu_get_host_ticks() >> 32;
 #endif
         break;
     case CSR_MUCOUNTEREN:
-        if (env->priv_ver <= PRIV_VERSION_1_09_1) {
-            return env->scounteren;
-        } else {
-            break; /* illegal instruction */
-        }
+        return env->mucounteren;
     case CSR_MSCOUNTEREN:
-        if (env->priv_ver <= PRIV_VERSION_1_09_1) {
-            return env->mcounteren;
-        } else {
-            break; /* illegal instruction */
-        }
+        return env->mscounteren;
     case CSR_SSTATUS: {
         target_ulong mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UIE
             | SSTATUS_UPIE | SSTATUS_SPP | SSTATUS_FS | SSTATUS_XS
-            | SSTATUS_SUM | SSTATUS_SD;
+            | SSTATUS_SUM |  SSTATUS_SD;
         if (env->priv_ver >= PRIV_VERSION_1_10_0) {
             mask |= SSTATUS_MXR;
         }
@@ -518,17 +462,10 @@ target_ulong csr_read_helper(CPURISCVState *env, target_ulong csrno)
     case CSR_STVEC:
         return env->stvec;
     case CSR_SCOUNTEREN:
-        if (env->priv_ver >= PRIV_VERSION_1_10_0) {
-            return env->scounteren;
-        } else {
-            break; /* illegal instruction */
-        }
+        return env->scounteren;
     case CSR_SCAUSE:
         return env->scause;
-    case CSR_SATP: /* CSR_SPTBR */
-        if (!riscv_feature(env, RISCV_FEATURE_MMU)) {
-            return 0;
-        }
+    case CSR_SPTBR:
         if (env->priv_ver >= PRIV_VERSION_1_10_0) {
             return env->satp;
         } else {
@@ -567,11 +504,7 @@ target_ulong csr_read_helper(CPURISCVState *env, target_ulong csrno)
     case CSR_MTVEC:
         return env->mtvec;
     case CSR_MCOUNTEREN:
-        if (env->priv_ver >= PRIV_VERSION_1_10_0) {
-            return env->mcounteren;
-        } else {
-            break; /* illegal instruction */
-        }
+        return env->mcounteren;
     case CSR_MEDELEG:
         return env->medeleg;
     case CSR_MIDELEG:

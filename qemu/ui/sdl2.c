@@ -32,6 +32,7 @@
 
 static int sdl2_num_outputs;
 static struct sdl2_console *sdl2_console;
+static DisplayOptions *opts;
 
 static SDL_Surface *guest_sprite_surface;
 static int gui_grab; /* if true, all keyboard/mouse events are grabbed */
@@ -565,7 +566,7 @@ static void handle_windowevent(SDL_Event *ev)
         break;
     case SDL_WINDOWEVENT_CLOSE:
         if (qemu_console_is_graphic(scon->dcl.con)) {
-            if (scon->opts->has_window_close && !scon->opts->window_close) {
+            if (opts->has_window_close && !opts->window_close) {
                 allow_close = false;
             }
             if (allow_close) {
@@ -612,7 +613,7 @@ void sdl2_poll_events(struct sdl2_console *scon)
             handle_textinput(ev);
             break;
         case SDL_QUIT:
-            if (scon->opts->has_window_close && !scon->opts->window_close) {
+            if (opts->has_window_close && !opts->window_close) {
                 allow_close = false;
             }
             if (allow_close) {
@@ -769,6 +770,7 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
     SDL_SysWMinfo info;
 
     assert(o->type == DISPLAY_TYPE_SDL);
+    opts = o;
 
 #ifdef __linux__
     /* on Linux, SDL may use fbcon|directfb|svgalib when run without
@@ -811,7 +813,6 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
             sdl2_console[i].hidden = true;
         }
         sdl2_console[i].idx = i;
-        sdl2_console[i].opts = o;
 #ifdef CONFIG_OPENGL
         sdl2_console[i].opengl = display_opengl;
         sdl2_console[i].dcl.ops = display_opengl ? &dcl_gl_ops : &dcl_2d_ops;
@@ -845,8 +846,7 @@ static void sdl2_display_init(DisplayState *ds, DisplayOptions *o)
         g_free(filename);
     }
 
-    if (sdl2_console->opts->has_full_screen &&
-        sdl2_console->opts->full_screen) {
+    if (opts->has_full_screen && opts->full_screen) {
         gui_fullscreen = 1;
         sdl_grab_start(0);
     }

@@ -1073,6 +1073,7 @@ static int nvme_reopen_prepare(BDRVReopenState *reopen_state,
 
 static void nvme_refresh_filename(BlockDriverState *bs, QDict *opts)
 {
+    QINCREF(opts);
     qdict_del(opts, "filename");
 
     if (!qdict_size(opts)) {
@@ -1081,7 +1082,7 @@ static void nvme_refresh_filename(BlockDriverState *bs, QDict *opts)
     }
 
     qdict_put_str(opts, "driver", bs->drv->format_name);
-    bs->full_open_options = qobject_ref(opts);
+    bs->full_open_options = opts;
 }
 
 static void nvme_refresh_limits(BlockDriverState *bs, Error **errp)

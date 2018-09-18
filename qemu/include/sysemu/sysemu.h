@@ -159,12 +159,9 @@ void hmp_pcie_aer_inject_error(Monitor *mon, const QDict *qdict);
 
 /* serial ports */
 
-/* Return the Chardev for serial port i, or NULL if none */
-Chardev *serial_hd(int i);
-/* return the number of serial ports defined by the user. serial_hd(i)
- * will always return NULL for any i which is greater than or equal to this.
- */
-int serial_max_hds(void);
+#define MAX_SERIAL_PORTS 4
+
+extern Chardev *serial_hds[MAX_SERIAL_PORTS];
 
 /* parallel ports */
 

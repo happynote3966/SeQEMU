@@ -2,27 +2,13 @@
 #define PPCE500_H
 
 #include "hw/boards.h"
-#include "hw/platform-bus.h"
 
-typedef struct PPCE500MachineState {
-    /*< private >*/
-    MachineState parent_obj;
-
-    /* points to instance of TYPE_PLATFORM_BUS_DEVICE if
-     * board supports dynamic sysbus devices
-     */
-    PlatformBusDevice *pbus_dev;
-} PPCE500MachineState;
-
-typedef struct PPCE500MachineClass {
-    /*< private >*/
-    MachineClass parent_class;
-
-    /* required -- must at least add toplevel board compatible */
-    void (*fixup_devtree)(void *fdt);
-
+typedef struct PPCE500Params {
     int pci_first_slot;
     int pci_nr_slots;
+
+    /* required -- must at least add toplevel board compatible */
+    void (*fixup_devtree)(struct PPCE500Params *params, void *fdt);
 
     int mpic_version;
     bool has_mpc8xxx_gpio;
@@ -36,18 +22,10 @@ typedef struct PPCE500MachineClass {
     hwaddr pci_mmio_base;
     hwaddr pci_mmio_bus_base;
     hwaddr spin_base;
-} PPCE500MachineClass;
+} PPCE500Params;
 
-void ppce500_init(MachineState *machine);
+void ppce500_init(MachineState *machine, PPCE500Params *params);
 
 hwaddr booke206_page_size_to_tlb(uint64_t size);
-
-#define TYPE_PPCE500_MACHINE      "ppce500-base-machine"
-#define PPCE500_MACHINE(obj) \
-    OBJECT_CHECK(PPCE500MachineState, (obj), TYPE_PPCE500_MACHINE)
-#define PPCE500_MACHINE_GET_CLASS(obj) \
-    OBJECT_GET_CLASS(PPCE500MachineClass, obj, TYPE_PPCE500_MACHINE)
-#define PPCE500_MACHINE_CLASS(klass) \
-    OBJECT_CLASS_CHECK(PPCE500MachineClass, klass, TYPE_PPCE500_MACHINE)
 
 #endif

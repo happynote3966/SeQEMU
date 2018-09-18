@@ -24,14 +24,37 @@
 #ifndef HW_ARM_SYSBUS_FDT_H
 #define HW_ARM_SYSBUS_FDT_H
 
-#include "exec/hwaddr.h"
+#include "hw/arm/arm.h"
+#include "qemu-common.h"
+#include "hw/sysbus.h"
+
+/*
+ * struct that contains dimensioning parameters of the platform bus
+ */
+typedef struct {
+    hwaddr platform_bus_base; /* start address of the bus */
+    hwaddr platform_bus_size; /* size of the bus */
+    int platform_bus_first_irq; /* first hwirq assigned to the bus */
+    int platform_bus_num_irqs; /* number of hwirq assigned to the bus */
+} ARMPlatformBusSystemParams;
+
+/*
+ * struct that contains all relevant info to build the fdt nodes of
+ * platform bus and attached dynamic sysbus devices
+ * in the future might be augmented with additional info
+ * such as PHY, CLK handles ...
+ */
+typedef struct {
+    const ARMPlatformBusSystemParams *system_params;
+    struct arm_boot_info *binfo;
+    const char *intc; /* parent interrupt controller name */
+} ARMPlatformBusFDTParams;
 
 /**
- * platform_bus_add_all_fdt_nodes - create all the platform bus nodes
- *
- * builds the parent platform bus node and all the nodes of dynamic
- * sysbus devices attached to it.
+ * arm_register_platform_bus_fdt_creator - register a machine init done
+ * notifier that creates the device tree nodes of the platform bus and
+ * associated dynamic sysbus devices
  */
-void platform_bus_add_all_fdt_nodes(void *fdt, const char *intc, hwaddr addr,
-                                    hwaddr bus_size, int irq_start);
+void arm_register_platform_bus_fdt_creator(ARMPlatformBusFDTParams *fdt_params);
+
 #endif

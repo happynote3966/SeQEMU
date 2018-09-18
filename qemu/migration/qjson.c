@@ -109,6 +109,6 @@ void qjson_finish(QJSON *json)
 
 void qjson_destroy(QJSON *json)
 {
-    qobject_unref(json->str);
+    QDECREF(json->str);
     g_free(json);
 }

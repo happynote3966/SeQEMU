@@ -2297,7 +2297,7 @@ DISAS_INSN(arith_im)
         im = tcg_const_i32(read_im32(env, s));
         break;
     default:
-        g_assert_not_reached();
+       abort();
     }
 
     if (with_SR) {
@@ -2317,8 +2317,7 @@ DISAS_INSN(arith_im)
             }
             src1 = gen_get_sr(s);
             break;
-        default:
-            /* OS_LONG; others already g_assert_not_reached.  */
+        case OS_LONG:
             disas_undef(env, s, insn);
             return;
         }
@@ -3167,11 +3166,11 @@ DISAS_INSN(subx_mem)
     opsize = insn_opsize(insn);
 
     addr_src = AREG(insn, 0);
-    tcg_gen_subi_i32(addr_src, addr_src, opsize_bytes(opsize));
+    tcg_gen_subi_i32(addr_src, addr_src, opsize);
     src = gen_load(s, opsize, addr_src, 1, IS_USER(s));
 
     addr_dest = AREG(insn, 9);
-    tcg_gen_subi_i32(addr_dest, addr_dest, opsize_bytes(opsize));
+    tcg_gen_subi_i32(addr_dest, addr_dest, opsize);
     dest = gen_load(s, opsize, addr_dest, 1, IS_USER(s));
 
     gen_subx(s, src, dest, opsize);

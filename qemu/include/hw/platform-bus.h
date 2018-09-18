@@ -37,6 +37,8 @@ typedef struct PlatformBusDevice PlatformBusDevice;
 struct PlatformBusDevice {
     /*< private >*/
     SysBusDevice parent_obj;
+    Notifier notifier;
+    bool done_gathering;
 
     /*< public >*/
     uint32_t mmio_size;
@@ -51,7 +53,5 @@ int platform_bus_get_irqn(PlatformBusDevice *platform_bus, SysBusDevice *sbdev,
                           int n);
 hwaddr platform_bus_get_mmio_addr(PlatformBusDevice *pbus, SysBusDevice *sbdev,
                                   int n);
-
-void platform_bus_link_device(PlatformBusDevice *pbus, SysBusDevice *sbdev);
 
 #endif /* HW_PLATFORM_BUS_H */

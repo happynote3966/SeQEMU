@@ -1340,7 +1340,7 @@ Example:
         emit(EXAMPLE_QAPI_EVENT_MY_EVENT, qmp, &err);
 
         error_propagate(errp, err);
-        qobject_unref(qmp);
+        QDECREF(qmp);
     }
 
     const QEnumLookup example_QAPIEvent_lookup = {

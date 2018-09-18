@@ -222,7 +222,7 @@ static QString *qstring_from_escaped_str(JSONParserContext *ctxt,
     return str;
 
 out:
-    qobject_unref(str);
+    QDECREF(str);
     return NULL;
 }
 
@@ -311,12 +311,12 @@ static int parse_pair(JSONParserContext *ctxt, QDict *dict, va_list *ap)
 
     qdict_put_obj(dict, qstring_get_str(key), value);
 
-    qobject_unref(key);
+    QDECREF(key);
 
     return 0;
 
 out:
-    qobject_unref(key);
+    QDECREF(key);
 
     return -1;
 }
@@ -371,7 +371,7 @@ static QObject *parse_object(JSONParserContext *ctxt, va_list *ap)
     return QOBJECT(dict);
 
 out:
-    qobject_unref(dict);
+    QDECREF(dict);
     return NULL;
 }
 
@@ -435,7 +435,7 @@ static QObject *parse_array(JSONParserContext *ctxt, va_list *ap)
     return QOBJECT(list);
 
 out:
-    qobject_unref(list);
+    QDECREF(list);
     return NULL;
 }
 

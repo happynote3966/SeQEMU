@@ -16,14 +16,15 @@
 #include "qapi/qmp/qobject.h"
 
 struct QNull {
-    struct QObjectBase_ base;
+    QObject base;
 };
 
 extern QNull qnull_;
 
 static inline QNull *qnull(void)
 {
-    return qobject_ref(&qnull_);
+    QINCREF(&qnull_);
+    return &qnull_;
 }
 
 bool qnull_is_equal(const QObject *x, const QObject *y);

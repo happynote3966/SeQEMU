@@ -27,6 +27,7 @@
 #include "qemu/error-report.h"
 
 #define BACKUP_CLUSTER_SIZE_DEFAULT (1 << 16)
+#define SLICE_TIME 100000000ULL /* ns */
 
 typedef struct BackupBlockJob {
     BlockJob common;
@@ -34,10 +35,10 @@ typedef struct BackupBlockJob {
     /* bitmap for sync=incremental */
     BdrvDirtyBitmap *sync_bitmap;
     MirrorSyncMode sync_mode;
+    RateLimit limit;
     BlockdevOnError on_source_error;
     BlockdevOnError on_target_error;
     CoRwlock flush_rwlock;
-    uint64_t len;
     uint64_t bytes_read;
     int64_t cluster_size;
     bool compress;
@@ -46,8 +47,6 @@ typedef struct BackupBlockJob {
 
     HBitmap *copy_bitmap;
 } BackupBlockJob;
-
-static const BlockJobDriver backup_job_driver;
 
 /* See if in-flight requests overlap and wait for them to complete */
 static void coroutine_fn wait_for_overlapping_requests(BackupBlockJob *job,
@@ -119,7 +118,7 @@ static int coroutine_fn backup_do_cow(BackupBlockJob *job,
 
         trace_backup_do_cow_process(job, start);
 
-        n = MIN(job->cluster_size, job->len - start);
+        n = MIN(job->cluster_size, job->common.len - start);
 
         if (!bounce_buffer) {
             bounce_buffer = blk_blockalign(blk, job->cluster_size);
@@ -160,7 +159,7 @@ static int coroutine_fn backup_do_cow(BackupBlockJob *job,
          * offset field is an opaque progress value, it is not a disk offset.
          */
         job->bytes_read += n;
-        block_job_progress_update(&job->common, n);
+        job->common.offset += n;
     }
 
 out:
@@ -189,6 +188,17 @@ static int coroutine_fn backup_before_write_notify(
     assert(QEMU_IS_ALIGNED(req->bytes, BDRV_SECTOR_SIZE));
 
     return backup_do_cow(job, req->offset, req->bytes, NULL, true);
+}
+
+static void backup_set_speed(BlockJob *job, int64_t speed, Error **errp)
+{
+    BackupBlockJob *s = container_of(job, BackupBlockJob, common);
+
+    if (speed < 0) {
+        error_setg(errp, QERR_INVALID_PARAMETER, "speed");
+        return;
+    }
+    ratelimit_set_speed(&s->limit, speed, SLICE_TIME);
 }
 
 static void backup_cleanup_sync_bitmap(BackupBlockJob *job, int ret)
@@ -243,7 +253,7 @@ void backup_do_checkpoint(BlockJob *job, Error **errp)
     BackupBlockJob *backup_job = container_of(job, BackupBlockJob, common);
     int64_t len;
 
-    assert(block_job_driver(job) == &backup_job_driver);
+    assert(job->driver->job_type == BLOCK_JOB_TYPE_BACKUP);
 
     if (backup_job->sync_mode != MIRROR_SYNC_MODE_NONE) {
         error_setg(errp, "The backup job only supports block checkpoint in"
@@ -251,7 +261,7 @@ void backup_do_checkpoint(BlockJob *job, Error **errp)
         return;
     }
 
-    len = DIV_ROUND_UP(backup_job->len, backup_job->cluster_size);
+    len = DIV_ROUND_UP(backup_job->common.len, backup_job->cluster_size);
     hbitmap_set(backup_job->copy_bitmap, 0, len);
 }
 
@@ -261,7 +271,7 @@ void backup_wait_for_overlapping_requests(BlockJob *job, int64_t offset,
     BackupBlockJob *backup_job = container_of(job, BackupBlockJob, common);
     int64_t start, end;
 
-    assert(block_job_driver(job) == &backup_job_driver);
+    assert(job->driver->job_type == BLOCK_JOB_TYPE_BACKUP);
 
     start = QEMU_ALIGN_DOWN(offset, backup_job->cluster_size);
     end = QEMU_ALIGN_UP(offset + bytes, backup_job->cluster_size);
@@ -274,7 +284,7 @@ void backup_cow_request_begin(CowRequest *req, BlockJob *job,
     BackupBlockJob *backup_job = container_of(job, BackupBlockJob, common);
     int64_t start, end;
 
-    assert(block_job_driver(job) == &backup_job_driver);
+    assert(job->driver->job_type == BLOCK_JOB_TYPE_BACKUP);
 
     start = QEMU_ALIGN_DOWN(offset, backup_job->cluster_size);
     end = QEMU_ALIGN_UP(offset + bytes, backup_job->cluster_size);
@@ -327,17 +337,21 @@ static void backup_complete(BlockJob *job, void *opaque)
 
 static bool coroutine_fn yield_and_check(BackupBlockJob *job)
 {
-    uint64_t delay_ns;
-
     if (block_job_is_cancelled(&job->common)) {
         return true;
     }
 
-    /* We need to yield even for delay_ns = 0 so that bdrv_drain_all() can
-     * return. Without a yield, the VM would not reboot. */
-    delay_ns = block_job_ratelimit_get_delay(&job->common, job->bytes_read);
-    job->bytes_read = 0;
-    block_job_sleep_ns(&job->common, delay_ns);
+    /* we need to yield so that bdrv_drain_all() returns.
+     * (without, VM does not reboot)
+     */
+    if (job->common.speed) {
+        uint64_t delay_ns = ratelimit_calculate_delay(&job->limit,
+                                                      job->bytes_read);
+        job->bytes_read = 0;
+        block_job_sleep_ns(&job->common, delay_ns);
+    } else {
+        block_job_sleep_ns(&job->common, 0);
+    }
 
     if (block_job_is_cancelled(&job->common)) {
         return true;
@@ -406,9 +420,8 @@ static void backup_incremental_init_copy_bitmap(BackupBlockJob *job)
         bdrv_set_dirty_iter(dbi, next_cluster * job->cluster_size);
     }
 
-    /* TODO block_job_progress_set_remaining() would make more sense */
-    block_job_progress_update(&job->common,
-        job->len - hbitmap_count(job->copy_bitmap) * job->cluster_size);
+    job->common.offset = job->common.len -
+                         hbitmap_count(job->copy_bitmap) * job->cluster_size;
 
     bdrv_dirty_iter_free(dbi);
 }
@@ -424,9 +437,7 @@ static void coroutine_fn backup_run(void *opaque)
     QLIST_INIT(&job->inflight_reqs);
     qemu_co_rwlock_init(&job->flush_rwlock);
 
-    nb_clusters = DIV_ROUND_UP(job->len, job->cluster_size);
-    block_job_progress_set_remaining(&job->common, job->len);
-
+    nb_clusters = DIV_ROUND_UP(job->common.len, job->cluster_size);
     job->copy_bitmap = hbitmap_alloc(nb_clusters, 0);
     if (job->sync_mode == MIRROR_SYNC_MODE_INCREMENTAL) {
         backup_incremental_init_copy_bitmap(job);
@@ -450,7 +461,7 @@ static void coroutine_fn backup_run(void *opaque)
         ret = backup_run_incremental(job);
     } else {
         /* Both FULL and TOP SYNC_MODE's require copying.. */
-        for (offset = 0; offset < job->len;
+        for (offset = 0; offset < job->common.len;
              offset += job->cluster_size) {
             bool error_is_read;
             int alloced = 0;
@@ -526,6 +537,7 @@ static const BlockJobDriver backup_job_driver = {
     .instance_size          = sizeof(BackupBlockJob),
     .job_type               = BLOCK_JOB_TYPE_BACKUP,
     .start                  = backup_run,
+    .set_speed              = backup_set_speed,
     .commit                 = backup_commit,
     .abort                  = backup_abort,
     .clean                  = backup_clean,
@@ -608,7 +620,7 @@ BlockJob *backup_job_create(const char *job_id, BlockDriverState *bs,
         goto error;
     }
 
-    /* job->len is fixed, so we can't allow resize */
+    /* job->common.len is fixed, so we can't allow resize */
     job = block_job_create(job_id, &backup_job_driver, txn, bs,
                            BLK_PERM_CONSISTENT_READ,
                            BLK_PERM_CONSISTENT_READ | BLK_PERM_WRITE |
@@ -664,7 +676,7 @@ BlockJob *backup_job_create(const char *job_id, BlockDriverState *bs,
     /* Required permissions are already taken with target's blk_new() */
     block_job_add_bdrv(&job->common, "target", target, 0, BLK_PERM_ALL,
                        &error_abort);
-    job->len = len;
+    job->common.len = len;
 
     return &job->common;
 

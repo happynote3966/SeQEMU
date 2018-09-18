@@ -1129,7 +1129,7 @@ void object_property_set_str(Object *obj, const char *value,
     QString *qstr = qstring_from_str(value);
     object_property_set_qobject(obj, QOBJECT(qstr), name, errp);
 
-    qobject_unref(qstr);
+    QDECREF(qstr);
 }
 
 char *object_property_get_str(Object *obj, const char *name,
@@ -1147,7 +1147,7 @@ char *object_property_get_str(Object *obj, const char *name,
         error_setg(errp, QERR_INVALID_PARAMETER_TYPE, name, "string");
     }
 
-    qobject_unref(ret);
+    qobject_decref(ret);
     return retval;
 }
 
@@ -1187,7 +1187,7 @@ void object_property_set_bool(Object *obj, bool value,
     QBool *qbool = qbool_from_bool(value);
     object_property_set_qobject(obj, QOBJECT(qbool), name, errp);
 
-    qobject_unref(qbool);
+    QDECREF(qbool);
 }
 
 bool object_property_get_bool(Object *obj, const char *name,
@@ -1208,7 +1208,7 @@ bool object_property_get_bool(Object *obj, const char *name,
         retval = qbool_get_bool(qbool);
     }
 
-    qobject_unref(ret);
+    qobject_decref(ret);
     return retval;
 }
 
@@ -1218,7 +1218,7 @@ void object_property_set_int(Object *obj, int64_t value,
     QNum *qnum = qnum_from_int(value);
     object_property_set_qobject(obj, QOBJECT(qnum), name, errp);
 
-    qobject_unref(qnum);
+    QDECREF(qnum);
 }
 
 int64_t object_property_get_int(Object *obj, const char *name,
@@ -1238,7 +1238,7 @@ int64_t object_property_get_int(Object *obj, const char *name,
         retval = -1;
     }
 
-    qobject_unref(ret);
+    qobject_decref(ret);
     return retval;
 }
 
@@ -1248,7 +1248,7 @@ void object_property_set_uint(Object *obj, uint64_t value,
     QNum *qnum = qnum_from_uint(value);
 
     object_property_set_qobject(obj, QOBJECT(qnum), name, errp);
-    qobject_unref(qnum);
+    QDECREF(qnum);
 }
 
 uint64_t object_property_get_uint(Object *obj, const char *name,
@@ -1267,7 +1267,7 @@ uint64_t object_property_get_uint(Object *obj, const char *name,
         retval = 0;
     }
 
-    qobject_unref(ret);
+    qobject_decref(ret);
     return retval;
 }
 
@@ -1644,9 +1644,8 @@ gchar *object_get_canonical_path_component(Object *obj)
     ObjectProperty *prop = NULL;
     GHashTableIter iter;
 
-    if (obj->parent == NULL) {
-        return NULL;
-    }
+    g_assert(obj);
+    g_assert(obj->parent != NULL);
 
     g_hash_table_iter_init(&iter, obj->parent->properties);
     while (g_hash_table_iter_next(&iter, NULL, (gpointer *)&prop)) {

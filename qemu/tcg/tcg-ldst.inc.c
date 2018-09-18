@@ -30,7 +30,7 @@ typedef struct TCGLabelQemuLdst {
     TCGReg datahi_reg;      /* reg index for high word to be loaded or stored */
     tcg_insn_unit *raddr;   /* gen code addr of the next IR of qemu_ld/st IR */
     tcg_insn_unit *label_ptr[2]; /* label pointers to be updated */
-    QSIMPLEQ_ENTRY(TCGLabelQemuLdst) next;
+    struct TCGLabelQemuLdst *next;
 } TCGLabelQemuLdst;
 
 
@@ -46,7 +46,7 @@ static bool tcg_out_ldst_finalize(TCGContext *s)
     TCGLabelQemuLdst *lb;
 
     /* qemu_ld/st slow paths */
-    QSIMPLEQ_FOREACH(lb, &s->ldst_labels, next) {
+    for (lb = s->ldst_labels; lb != NULL; lb = lb->next) {
         if (lb->is_ld) {
             tcg_out_qemu_ld_slow_path(s, lb);
         } else {
@@ -72,7 +72,7 @@ static inline TCGLabelQemuLdst *new_ldst_label(TCGContext *s)
 {
     TCGLabelQemuLdst *l = tcg_malloc(sizeof(*l));
 
-    QSIMPLEQ_INSERT_TAIL(&s->ldst_labels, l, next);
-
+    l->next = s->ldst_labels;
+    s->ldst_labels = l;
     return l;
 }

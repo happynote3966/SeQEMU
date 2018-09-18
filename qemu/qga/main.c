@@ -563,7 +563,7 @@ static int send_response(GAState *s, QObject *payload)
         response_qstr = qstring_new();
         qstring_append_chr(response_qstr, QGA_SENTINEL_BYTE);
         qstring_append(response_qstr, qstring_get_str(payload_qstr));
-        qobject_unref(payload_qstr);
+        QDECREF(payload_qstr);
     } else {
         response_qstr = payload_qstr;
     }
@@ -571,7 +571,7 @@ static int send_response(GAState *s, QObject *payload)
     qstring_append_chr(response_qstr, '\n');
     buf = qstring_get_str(response_qstr);
     status = ga_channel_write_all(s->channel, buf, strlen(buf));
-    qobject_unref(response_qstr);
+    QDECREF(response_qstr);
     if (status != G_IO_STATUS_NORMAL) {
         return -EIO;
     }
@@ -592,7 +592,7 @@ static void process_command(GAState *s, QDict *req)
         if (ret < 0) {
             g_warning("error sending response: %s", strerror(-ret));
         }
-        qobject_unref(rsp);
+        qobject_decref(rsp);
     }
 }
 
@@ -600,46 +600,42 @@ static void process_command(GAState *s, QDict *req)
 static void process_event(JSONMessageParser *parser, GQueue *tokens)
 {
     GAState *s = container_of(parser, GAState, parser);
-    QDict *qdict;
+    QObject *obj;
+    QDict *req, *rsp;
     Error *err = NULL;
     int ret;
 
     g_assert(s && parser);
 
     g_debug("process_event: called");
-    qdict = qobject_to(QDict, json_parser_parse_err(tokens, NULL, &err));
-    if (err || !qdict) {
-        qobject_unref(qdict);
-        qdict = qdict_new();
-        if (!err) {
-            g_warning("failed to parse event: unknown error");
-            error_setg(&err, QERR_JSON_PARSING);
-        } else {
-            g_warning("failed to parse event: %s", error_get_pretty(err));
-        }
-        qdict_put_obj(qdict, "error", qmp_build_error_object(err));
-        error_free(err);
+    obj = json_parser_parse_err(tokens, NULL, &err);
+    if (err) {
+        goto err;
+    }
+    req = qobject_to(QDict, obj);
+    if (!req) {
+        error_setg(&err, QERR_JSON_PARSING);
+        goto err;
+    }
+    if (!qdict_haskey(req, "execute")) {
+        g_warning("unrecognized payload format");
+        error_setg(&err, QERR_UNSUPPORTED);
+        goto err;
     }
 
-    /* handle host->guest commands */
-    if (qdict_haskey(qdict, "execute")) {
-        process_command(s, qdict);
-    } else {
-        if (!qdict_haskey(qdict, "error")) {
-            qobject_unref(qdict);
-            qdict = qdict_new();
-            g_warning("unrecognized payload format");
-            error_setg(&err, QERR_UNSUPPORTED);
-            qdict_put_obj(qdict, "error", qmp_build_error_object(err));
-            error_free(err);
-        }
-        ret = send_response(s, QOBJECT(qdict));
-        if (ret < 0) {
-            g_warning("error sending error response: %s", strerror(-ret));
-        }
-    }
+    process_command(s, req);
+    qobject_decref(obj);
+    return;
 
-    qobject_unref(qdict);
+err:
+    g_warning("failed to parse event: %s", error_get_pretty(err));
+    rsp = qmp_error_response(err);
+    ret = send_response(s, QOBJECT(rsp));
+    if (ret < 0) {
+        g_warning("error sending error response: %s", strerror(-ret));
+    }
+    QDECREF(rsp);
+    qobject_decref(obj);
 }
 
 /* false return signals GAChannel to close the current client connection */

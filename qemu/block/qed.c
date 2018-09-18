@@ -763,7 +763,7 @@ static int coroutine_fn bdrv_qed_co_create_opts(const char *filename,
     qdict_put_str(qdict, "file", bs->node_name);
 
     qobj = qdict_crumple(qdict, errp);
-    qobject_unref(qdict);
+    QDECREF(qdict);
     qdict = qobject_to(QDict, qobj);
     if (qdict == NULL) {
         ret = -EINVAL;
@@ -789,7 +789,7 @@ static int coroutine_fn bdrv_qed_co_create_opts(const char *filename,
     ret = bdrv_qed_co_create(create_options, errp);
 
 fail:
-    qobject_unref(qdict);
+    QDECREF(qdict);
     bdrv_unref(bs);
     qapi_free_BlockdevCreateOptions(create_options);
     return ret;
@@ -1437,9 +1437,8 @@ static int coroutine_fn bdrv_qed_co_readv(BlockDriverState *bs,
 
 static int coroutine_fn bdrv_qed_co_writev(BlockDriverState *bs,
                                            int64_t sector_num, int nb_sectors,
-                                           QEMUIOVector *qiov, int flags)
+                                           QEMUIOVector *qiov)
 {
-    assert(!flags);
     return qed_co_request(bs, sector_num, qiov, nb_sectors, QED_AIOCB_WRITE);
 }
 
