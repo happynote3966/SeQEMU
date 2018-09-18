@@ -85,8 +85,10 @@ static int throttle_open(BlockDriverState *bs, QDict *options,
     if (!bs->file) {
         return -EINVAL;
     }
-    bs->supported_write_flags = bs->file->bs->supported_write_flags;
-    bs->supported_zero_flags = bs->file->bs->supported_zero_flags;
+    bs->supported_write_flags = bs->file->bs->supported_write_flags |
+                                BDRV_REQ_WRITE_UNCHANGED;
+    bs->supported_zero_flags = bs->file->bs->supported_zero_flags |
+                               BDRV_REQ_WRITE_UNCHANGED;
 
     ret = throttle_parse_options(options, &group, errp);
     if (ret == 0) {
@@ -147,7 +149,7 @@ static int coroutine_fn throttle_co_pdiscard(BlockDriverState *bs,
     ThrottleGroupMember *tgm = bs->opaque;
     throttle_group_co_io_limits_intercept(tgm, bytes, true);
 
-    return bdrv_co_pdiscard(bs->file->bs, offset, bytes);
+    return bdrv_co_pdiscard(bs->file, offset, bytes);
 }
 
 static int throttle_co_flush(BlockDriverState *bs)

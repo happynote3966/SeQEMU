@@ -35,11 +35,12 @@
  */
 
 #include "qemu/osdep.h"
+#include "qemu/units.h"
 #include "qapi/error.h"
 #include "qemu-common.h"
 #include "qemu/error-report.h"
 #include "hw/usb.h"
-#include "hw/usb/desc.h"
+#include "desc.h"
 
 #include "ccid.h"
 
@@ -63,7 +64,7 @@ do { \
  * or handle the migration complexity - VMState doesn't handle this case.
  * sizes are expected never to be exceeded, unless guest misbehaves.
  */
-#define BULK_OUT_DATA_SIZE 65536
+#define BULK_OUT_DATA_SIZE  (64 * KiB)
 #define PENDING_ANSWERS_NUM 128
 
 #define BULK_IN_BUF_SIZE 384
@@ -786,7 +787,7 @@ static void ccid_write_data_block(USBCCIDState *s, uint8_t slot, uint8_t seq,
         DPRINTF(s, D_VERBOSE, "error %d\n", p->b.bError);
     }
     if (len) {
-        g_assert_nonnull(data);
+        assert(data);
         memcpy(p->abData, data, len);
     }
     ccid_reset_error_status(s);
@@ -1064,7 +1065,8 @@ err:
     return;
 }
 
-static void ccid_bulk_in_copy_to_guest(USBCCIDState *s, USBPacket *p)
+static void ccid_bulk_in_copy_to_guest(USBCCIDState *s, USBPacket *p,
+    unsigned int max_packet_size)
 {
     int len = 0;
 
@@ -1072,10 +1074,13 @@ static void ccid_bulk_in_copy_to_guest(USBCCIDState *s, USBPacket *p)
     if (s->current_bulk_in != NULL) {
         len = MIN(s->current_bulk_in->len - s->current_bulk_in->pos,
                   p->iov.size);
-        usb_packet_copy(p, s->current_bulk_in->data +
-                        s->current_bulk_in->pos, len);
+        if (len) {
+            usb_packet_copy(p, s->current_bulk_in->data +
+                            s->current_bulk_in->pos, len);
+        }
         s->current_bulk_in->pos += len;
-        if (s->current_bulk_in->pos == s->current_bulk_in->len) {
+        if (s->current_bulk_in->pos == s->current_bulk_in->len
+            && len != max_packet_size) {
             ccid_bulk_in_release(s);
         }
     } else {
@@ -1107,7 +1112,7 @@ static void ccid_handle_data(USBDevice *dev, USBPacket *p)
     case USB_TOKEN_IN:
         switch (p->ep->nr) {
         case CCID_BULK_IN_EP:
-            ccid_bulk_in_copy_to_guest(s, p);
+            ccid_bulk_in_copy_to_guest(s, p, dev->ep_ctl.max_packet_size);
             break;
         case CCID_INT_IN_EP:
             if (s->notify_slot_change) {
