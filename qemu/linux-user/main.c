@@ -38,6 +38,11 @@
 #include "target_elf.h"
 #include "cpu_loop-common.h"
 
+// SeQEMU
+
+#include "seqemu.h"
+//#include <stdio.h>
+
 char *exec_path;
 
 int singlestep;
@@ -698,7 +703,12 @@ int main(int argc, char **argv, char **envp)
      * Now that page sizes are configured in tcg_exec_init() we can do
      * proper page alignment for guest_base.
      */
+
+
+
     guest_base = HOST_PAGE_ALIGN(guest_base);
+
+
 
     if (reserved_va || have_guest_base) {
         guest_base = init_guest_space(guest_base, reserved_va, 0,
@@ -715,6 +725,11 @@ int main(int argc, char **argv, char **envp)
             mmap_next_start = reserved_va;
         }
     }
+
+
+    //SeQEMU
+    seqemu_save_guest_base(guest_base);
+    seqemu_print_guest_base();
 
     /*
      * Read in mmap_min_addr kernel parameter.  This value is used
@@ -816,6 +831,12 @@ int main(int argc, char **argv, char **envp)
         }
         gdb_handlesig(cpu, 0);
     }
+
+
+    seqemu_save_image_info(info);
+    seqemu_print_image_info();
+
+
     cpu_loop(env);
     /* never exits */
     return 0;
