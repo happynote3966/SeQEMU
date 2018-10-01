@@ -257,7 +257,13 @@ void seqemu_read_elf(int fd){
 		fprintf(stderr,"[%d] name : %s, addr = 0x%x, type = %x\n",i,target_func[i].name,target_func[i].addr,target_func[i].type);
 	}
 
-	
+
+	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
+		if(target_func[i].type == SEQEMU_FUNC_TYPE_DANGEROUS){
+			fprintf(stderr,"[ABORT!] Dangerous function is EXIST!\n");
+			exit(-1);
+		}
+	}
 
 
 }
