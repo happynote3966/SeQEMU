@@ -662,6 +662,10 @@ int main(int argc, char **argv, char **envp)
         }
     }
 
+    // SeQEMU
+    seqemu_read_elf(execfd);
+
+
     if (cpu_model == NULL) {
         cpu_model = cpu_get_model(get_elf_eflags(execfd));
     }
