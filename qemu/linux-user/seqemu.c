@@ -1,7 +1,10 @@
-#include <unistd.h>	// pread
+#include <unistd.h>	// pread,fstat
 #include <elf.h>	// ELF structure
 #include <string.h>	// memcpy
 #include <stdint.h>
+#include <sys/types.h>	// fstat,open
+#include <sys/stat.h>	// fstat,open
+#include <fcntl.h>	// open
 #include "seqemu.h"
 //#include "qemu.h"	// image_info
 //#include "include/exec/user/abitypes.h" // abi_ulong
@@ -258,9 +261,41 @@ void seqemu_read_elf(int fd){
 	}
 
 
+	// If DANGEROUS FUNCTION is EXISTS, display Miho Kohinata
+	
+
 	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
 		if(target_func[i].type == SEQEMU_FUNC_TYPE_DANGEROUS){
-			fprintf(stderr,"[ABORT!] Dangerous function is EXIST!\n");
+
+
+			// Open dame.txt and get the file size
+
+			struct stat stbuf;
+			int kohinata_fd = open("../resources/dame.txt",O_RDONLY);
+			long file_size;
+			char *output_buffer;
+
+			if(kohinata_fd == -1){
+				fprintf(stderr,"[ERROR!] Can't open \"dame.txt\" !\n");
+				exit(-1);
+			}
+
+			if(fstat(kohinata_fd,&stbuf) == -1){
+				fprintf(stderr,"[ERROR!] Can't get the file size!\n");
+				exit(-1);
+			}
+
+			file_size = stbuf.st_size;
+
+			output_buffer = (char *)g_malloc(sizeof(char) * file_size);
+
+			if(output_buffer == NULL){
+				fprintf(stderr,"[ERROR!] Can't get the output_buffer memory!\n");
+			}
+
+			read(kohinata_fd,output_buffer,file_size);
+			fprintf(stderr,"\n\n%s\n",output_buffer);
+			fprintf(stderr,"\n[ABORT!] Dangerous function is EXIST!\n");
 			exit(-1);
 		}
 	}

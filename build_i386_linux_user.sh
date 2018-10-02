@@ -7,7 +7,7 @@ cd build_i386_linux_user
 
 make -j2
 
-cat <<EOF > test.c
+cat <<EOF > test-all.c
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
@@ -28,4 +28,36 @@ int main(void){
 
 EOF
 
-gcc -o test -m32 test.c
+gcc -o test-all -m32 test-all.c
+
+
+cat <<EOF > test-dangerous.c
+#include <stdio.h>
+int main(void){
+	char buf[100];
+	gets(buf);
+	printf(buf);
+	return 0;
+}
+
+EOF
+
+gcc -o test-dangerous -m32 test-dangerous.c
+
+
+cat <<EOF > test-format.c
+#include <stdio.h>
+char format_string[] = "formatstring %d %x %s\n";
+char print_string[] = "print_string\n";
+int main(void){
+	int i = 100;
+	printf(format_string,i,i,print_string);
+	return 0;
+}
+
+EOF
+
+gcc -o test-format -m32 test-format.c
+
+
+cp -R ../resources ./
