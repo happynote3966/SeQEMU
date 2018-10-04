@@ -11,6 +11,7 @@
 #elif defined(CONFIG_BYTESWAP_H)
 # include <byteswap.h>
 
+
 static inline uint16_t bswap16(uint16_t x)
 {
     return bswap_16(x);

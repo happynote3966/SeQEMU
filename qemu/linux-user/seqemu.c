@@ -28,31 +28,57 @@ void seqemu_print_guest_base(void){
 
 
 void seqemu_save_image_info(struct image_info *info){
-
-	seqemu_image_info.start_brk = info->start_brk;
-	seqemu_image_info.end_code = info->end_code;
+	seqemu_image_info.load_bias = info->load_bias;
+	seqemu_image_info.load_addr = info->load_addr;
 	seqemu_image_info.start_code = info->start_code;
+	seqemu_image_info.end_code = info->end_code;
 	seqemu_image_info.start_data = info->start_data;
 	seqemu_image_info.end_data = info->end_data;
-	seqemu_image_info.start_stack = info->start_stack;
+	seqemu_image_info.start_brk = info->start_brk;
 	seqemu_image_info.brk = info->brk;
+	seqemu_image_info.start_mmap = info->start_mmap;
+	seqemu_image_info.start_stack = info->start_stack;
+	seqemu_image_info.stack_limit = info->stack_limit;
 	seqemu_image_info.entry = info->entry;
+	seqemu_image_info.code_offset = info->code_offset;
+	seqemu_image_info.data_offset = info->data_offset;
+	seqemu_image_info.saved_auxv = info->saved_auxv;
+	seqemu_image_info.auxv_len = info->auxv_len;
 	seqemu_image_info.arg_start = info->arg_start;
 	seqemu_image_info.arg_end = info->arg_end;
-	seqemu_image_info.saved_auxv = info->saved_auxv;
+	seqemu_image_info.arg_strings = info->arg_strings;
+	seqemu_image_info.env_strings = info->env_strings;
+	seqemu_image_info.file_string = info->file_string;
+
 }
 
 void seqemu_print_image_info(void){
 	unsigned long b = seqemu_guest_base;
-	fprintf(stderr,"start_brk   =0x%lx [0x%x]\n",seqemu_image_info.start_brk + b, seqemu_image_info.start_brk);
-	fprintf(stderr,"end_code    =0x%lx [0x%x]\n",seqemu_image_info.end_code + b, seqemu_image_info.end_code);
+	fprintf(stderr,"load_bias   =0x%lx [0x%x]\n",seqemu_image_info.load_bias + b, seqemu_image_info.load_bias);
+	fprintf(stderr,"load_addr   =0x%lx [0x%x]\n",seqemu_image_info.load_addr + b, seqemu_image_info.load_addr);
 	fprintf(stderr,"start_code  =0x%lx [0x%x]\n",seqemu_image_info.start_code + b, seqemu_image_info.start_code);
+	fprintf(stderr,"end_code    =0x%lx [0x%x]\n",seqemu_image_info.end_code + b, seqemu_image_info.end_code);
 	fprintf(stderr,"start_data  =0x%lx [0x%x]\n",seqemu_image_info.start_data + b, seqemu_image_info.start_data);
 	fprintf(stderr,"end_data    =0x%lx [0x%x]\n",seqemu_image_info.end_data + b, seqemu_image_info.end_data);
-	fprintf(stderr,"start_stack =0x%lx [0x%x]\n",seqemu_image_info.start_stack + b, seqemu_image_info.start_stack);
+	fprintf(stderr,"start_brk   =0x%lx [0x%x]\n",seqemu_image_info.start_brk + b, seqemu_image_info.start_brk);
 	fprintf(stderr,"brk         =0x%lx [0x%x]\n",seqemu_image_info.brk + b, seqemu_image_info.brk);
+	fprintf(stderr,"start_mmap  =0x%lx [0x%x]\n",seqemu_image_info.start_mmap + b, seqemu_image_info.start_mmap);
+	fprintf(stderr,"start_stack =0x%lx [0x%x]\n",seqemu_image_info.start_stack + b, seqemu_image_info.start_stack);
+	fprintf(stderr,"stack_limit =0x%lx [0x%x]\n",seqemu_image_info.stack_limit + b, seqemu_image_info.stack_limit);
 	fprintf(stderr,"entry       =0x%lx [0x%x]\n",seqemu_image_info.entry + b, seqemu_image_info.entry);
+	fprintf(stderr,"code_offset =0x%lx [0x%x]\n",seqemu_image_info.code_offset + b, seqemu_image_info.code_offset);
+	fprintf(stderr,"data_offset =0x%lx [0x%x]\n",seqemu_image_info.data_offset + b, seqemu_image_info.data_offset);
+	fprintf(stderr,"saved_auxv  =0x%lx [0x%x]\n",seqemu_image_info.saved_auxv + b, seqemu_image_info.saved_auxv);
+	fprintf(stderr,"auxv_len    =0x%lx [0x%x]\n",seqemu_image_info.auxv_len + b, seqemu_image_info.auxv_len);
 	fprintf(stderr,"argv_start  =0x%lx [0x%x]\n",seqemu_image_info.arg_start + b, seqemu_image_info.arg_start);
+	fprintf(stderr,"argv_end    =0x%lx [0x%x]\n",seqemu_image_info.arg_end + b, seqemu_image_info.arg_end);
+
+
+	fprintf(stderr,"arg_strings =0x%lx [0x%x]\n",seqemu_image_info.arg_strings + b, seqemu_image_info.arg_strings);
+	fprintf(stderr,"env_strings =0x%lx [0x%x]\n",seqemu_image_info.env_strings + b, seqemu_image_info.env_strings);
+	fprintf(stderr,"file_string =0x%lx [0x%x]\n",seqemu_image_info.file_string + b, seqemu_image_info.file_string);
+
+	fprintf(stderr,"start_stack =0x%lx [0x%x]\n",seqemu_image_info.start_stack + b, seqemu_image_info.start_stack);
 	fprintf(stderr,"env_start   =0x%lx [0x%x]\n",seqemu_image_info.arg_end + (abi_ulong)sizeof(abi_ulong) + b, seqemu_image_info.arg_end + (abi_ulong)sizeof(abi_ulong));
 	fprintf(stderr,"auxv_start  =0x%lx [0x%x]\n",seqemu_image_info.saved_auxv + b, seqemu_image_info.saved_auxv);
 }
