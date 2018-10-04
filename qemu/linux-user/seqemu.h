@@ -24,8 +24,11 @@ void seqemu_read_elf(int fd);
 
 typedef struct{
 	char *name;
-	unsigned int addr;
+	//unsigned int addr;
+	unsigned int got_addr;
+	unsigned int plt_addr;
 	unsigned int type;
+
 }Seqemu_target_func;
 
 #define SEQEMU_MAX_FUNCTION_NAME_LENGTH 100
@@ -35,5 +38,8 @@ typedef struct{
 #define SEQEMU_FUNC_TYPE_BUFFER 0x4
 #define SEQEMU_FUNC_TYPE_OTHER 0x5
 
+
+// feature-005 Restricting Format String
+void seqemu_check_format_string(CPUArchState *env);
 
 #endif /* SEQEMU_H */

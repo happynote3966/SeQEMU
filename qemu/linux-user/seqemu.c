@@ -134,15 +134,18 @@ void seqemu_bswap_4(void *p){
 	sp[2] = tmp;
 }
 
+Seqemu_target_func *target_func;
+unsigned int seqemu_target_func_num;
+
 void seqemu_read_elf(int fd){
 	Elf32_Ehdr *elfh;
-	Elf32_Shdr *sh,*sh_relplt,*sh_dynstr,*sh_shstrtab,*sh_dynsym;
+	Elf32_Shdr *sh,*sh_relplt,*sh_dynstr,*sh_shstrtab,*sh_dynsym,*sh_plt;
 	Elf32_Rel *rels;
 	Elf32_Sym *syms;
 	uint8_t buf[sizeof(Elf32_Ehdr)];
 	uint8_t *shstrtab,*dynstr;
 	int i,j,istyped;
-	Seqemu_target_func *target_func;
+	//Seqemu_target_func *target_func;
 
 	/////////////////////////////////////////////////
 	// Step 1. Get ELF Header, and Checking the MAGIC
@@ -200,6 +203,14 @@ void seqemu_read_elf(int fd){
 			}
 		}
 
+		if(sh->sh_type == SHT_PROGBITS){
+			if(strcmp((char *)&shstrtab[sh->sh_name],".plt") == 0){
+				fprintf(stderr,"[OK] .plt is EXIST!\n");
+				sh_plt = g_malloc(sizeof(Elf32_Shdr));
+				memcpy(sh_plt,sh,sizeof(Elf32_Shdr));
+			}
+		}
+
 		// Get Section of .dynsym
 		if(sh->sh_type == SHT_DYNSYM){
 			fprintf(stderr,"[OK] .dynsym is EXIST!\n");
@@ -242,11 +253,13 @@ void seqemu_read_elf(int fd){
 	// Step 5. Construct The Dangerous Function Table
 	/////////////////////////////////////////////////
 
-	target_func = g_malloc(sizeof(Seqemu_target_func) * (sh_relplt->sh_size / sizeof(Elf32_Rel)));
+	seqemu_target_func_num = sh_relplt->sh_size / sizeof(Elf32_Rel);
+	target_func = g_malloc(sizeof(Seqemu_target_func) * seqemu_target_func_num);
 
 	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
 		istyped = 0;
-		target_func[i].addr = rels[i].r_offset;
+		target_func[i].got_addr = rels[i].r_offset;
+		target_func[i].plt_addr = sh_plt->sh_addr + (i * 0x10) + 0x10;
 		target_func[i].name = strdup((char *)&dynstr[syms[rels[i].r_info >> 8].st_name]);
 		for(j = 0; dangerous_func[j] != NULL; j++){
 			if(strcmp(dangerous_func[j],target_func[i].name) == 0){
@@ -283,7 +296,7 @@ void seqemu_read_elf(int fd){
 	}
 
 	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
-		fprintf(stderr,"[%d] name : %s, addr = 0x%x, type = %x\n",i,target_func[i].name,target_func[i].addr,target_func[i].type);
+		fprintf(stderr,"[%d] name : %s, got_addr = 0x%x, plt_addr = 0x%x, type = %x\n",i,target_func[i].name,target_func[i].got_addr,target_func[i].plt_addr,target_func[i].type);
 	}
 
 
@@ -327,5 +340,38 @@ void seqemu_read_elf(int fd){
 	}
 
 
+}
+
+
+// Feature-005 Restricting Format String
+
+void seqemu_check_format_string(CPUArchState *env){
+	target_ulong eip = env->eip;
+	int i;
+
+	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
+
+	for(i = 0; i < seqemu_target_func_num; i++){
+		if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_FORMAT){
+			target_ulong first_arg = env->regs[4] + 4;
+			fprintf(stderr,"[ARG1 Pointer] = %lx\n",first_arg + seqemu_guest_base);
+			uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
+			fprintf(stderr,"%x\n",instack_value);
+			fprintf(stderr,"[ARG1 String]  = %s\n",(char *)(instack_value + seqemu_guest_base));
+			char *s = (char *)(instack_value + seqemu_guest_base);
+
+			char *percent_n_str = NULL;
+			percent_n_str = strstr(s,"\%n");
+			fprintf(stderr,"[DEBUG] NO\n");
+			if(percent_n_str == NULL){
+				fprintf(stderr,"[DEBUG] NO \%n formatter!\n");
+			}else{
+				percent_n_str[0] = '8';
+				percent_n_str[1] = '8';
+			}
+
+			break;
+		}
+	}
 }
 
