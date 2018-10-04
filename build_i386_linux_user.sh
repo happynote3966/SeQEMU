@@ -47,7 +47,7 @@ gcc -o test-dangerous -m32 test-dangerous.c
 
 cat <<EOF > test-format.c
 #include <stdio.h>
-char format_string[] = "formatstring %d %x %s\n";
+char format_string[] = "formatstring %n %n %n\n";
 char print_string[] = "print_string\n";
 int main(void){
 	int i = 100;

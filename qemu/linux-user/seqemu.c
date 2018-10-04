@@ -349,25 +349,22 @@ void seqemu_check_format_string(CPUArchState *env){
 	target_ulong eip = env->eip;
 	int i;
 
-	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
+	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
 
 	for(i = 0; i < seqemu_target_func_num; i++){
 		if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_FORMAT){
 			target_ulong first_arg = env->regs[4] + 4;
-			fprintf(stderr,"[ARG1 Pointer] = %lx\n",first_arg + seqemu_guest_base);
 			uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
-			fprintf(stderr,"%x\n",instack_value);
-			fprintf(stderr,"[ARG1 String]  = %s\n",(char *)(instack_value + seqemu_guest_base));
 			char *s = (char *)(instack_value + seqemu_guest_base);
 
 			char *percent_n_str = NULL;
-			percent_n_str = strstr(s,"\%n");
-			fprintf(stderr,"[DEBUG] NO\n");
-			if(percent_n_str == NULL){
-				fprintf(stderr,"[DEBUG] NO \%n formatter!\n");
-			}else{
-				percent_n_str[0] = '8';
+			percent_n_str = strstr(s,"%n");
+
+			while(percent_n_str != NULL){
+				fprintf(stderr,"[DEBUG] str %s\n",percent_n_str);
+				percent_n_str[0] = '7';
 				percent_n_str[1] = '8';
+				percent_n_str = strstr(percent_n_str,"%n");
 			}
 
 			break;
