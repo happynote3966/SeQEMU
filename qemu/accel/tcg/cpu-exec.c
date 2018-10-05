@@ -148,7 +148,10 @@ static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
     int tb_exit;
     uint8_t *tb_ptr = itb->tc.ptr;
 
+
+    // SeQEMU
     seqemu_check_format_string(env);
+    seqemu_check_control_flow(env);
 
     qemu_log_mask_and_addr(CPU_LOG_EXEC, itb->pc,
                            "Trace %d: %p ["
@@ -179,6 +182,9 @@ static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
     last_tb = (TranslationBlock *)(ret & ~TB_EXIT_MASK);
     tb_exit = ret & TB_EXIT_MASK;
     trace_exec_tb_exit(last_tb, tb_exit);
+
+    // SeQEMU
+    seqemu_check_control_flow(env);
 
     if (tb_exit > TB_EXIT_IDX1) {
         /* We didn't start executing this TB (eg because the instruction

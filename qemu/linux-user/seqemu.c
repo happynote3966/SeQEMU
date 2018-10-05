@@ -105,7 +105,7 @@ static const char *malloc_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
 
 static const char *buffer_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
 	"memcpy",
-	""
+	"fgets"
 };
 
 
@@ -252,7 +252,7 @@ void seqemu_read_elf(int fd){
 	/////////////////////////////////////////////////
 	// Step 5. Construct The Dangerous Function Table
 	/////////////////////////////////////////////////
-
+	// sh_plt_addr = sh_plt->sh_addr;
 	seqemu_target_func_num = sh_relplt->sh_size / sizeof(Elf32_Rel);
 	target_func = g_malloc(sizeof(Seqemu_target_func) * seqemu_target_func_num);
 
@@ -372,3 +372,49 @@ void seqemu_check_format_string(CPUArchState *env){
 	}
 }
 
+// feature-006 Checking Control Flow
+
+int checking_state = 0;
+//int lib_pass = 0;
+target_ulong protect_return_address = 0x0;
+target_ulong checking_return_address_pointer = 0x0;
+//target_ulong checking_function_address = 0x0;
+//target_ulong sh_plt_addr = 0x0;
+
+void seqemu_check_control_flow(CPUArchState *env){
+	target_ulong eip = env->eip;
+	int i;
+
+	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
+
+	if(checking_state){
+		fprintf(stderr,"[STACK] env->regs[4] + 4 = 0x%x , checking_return_address_pointer = 0x%x\n",env->regs[4] - 4,checking_return_address_pointer);
+		if(env->regs[4] - 4 == checking_return_address_pointer){
+			fprintf(stderr,"[STACK] Address Checking...\n");
+			target_ulong tmp_return_address = *(uint32_t *)(checking_return_address_pointer + seqemu_guest_base);
+			fprintf(stderr,"[STACK] Address is 0x%x\n",tmp_return_address);
+			if(tmp_return_address != protect_return_address){
+				env->eip = protect_return_address;
+				fprintf(stderr,"[!!!!!] Modify RA Detected!\n");
+				fprintf(stderr,"[!!!!!] tmp = 0x%x\n",tmp_return_address);
+				fprintf(stderr,"[!!!!!] Protected Address = 0x%x\n",env->eip);
+			}
+			protect_return_address = 0x0;
+			checking_return_address_pointer = 0x0;
+			checking_state = 0x0;
+		}
+	}else{
+
+
+		for(i = 0; i < seqemu_target_func_num; i++){
+			if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_BUFFER){
+				checking_return_address_pointer = env->regs[5] + 4;
+				protect_return_address = *(uint32_t *)(checking_return_address_pointer + seqemu_guest_base);
+				//checking_function_address = target_func[i].plt_addr;
+				checking_state = 1;
+				fprintf(stderr,"[STACK] RA = 0x%x\n",protect_return_address);
+				break;
+			}
+		}
+	}
+}

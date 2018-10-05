@@ -59,5 +59,23 @@ EOF
 
 gcc -o test-format -m32 test-format.c
 
+cat <<EOF > test-buffer.c
+#include <stdio.h>
+
+void func(void){
+	char buf[10];
+	fgets(buf,30,stdin);
+	puts(buf);
+}
+
+int main(void){
+	func();
+	printf("OK! Control Flow is protected!\n");
+	return 0;
+}
+
+EOF
+
+gcc -o test-buffer -m32 test-buffer.c -fno-stack-protector
 
 cp -R ../resources ./

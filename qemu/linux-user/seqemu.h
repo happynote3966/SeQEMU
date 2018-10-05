@@ -42,4 +42,7 @@ typedef struct{
 // feature-005 Restricting Format String
 void seqemu_check_format_string(CPUArchState *env);
 
+// feature-006 Checking Control Flow
+void seqemu_check_control_flow(CPUArchState *env);
+
 #endif /* SEQEMU_H */
