@@ -45,4 +45,7 @@ void seqemu_check_format_string(CPUArchState *env);
 // feature-006 Checking Control Flow
 void seqemu_check_control_flow(CPUArchState *env);
 
+// feature-007 Checking Heap Chunk
+void seqemu_check_heap_metadata(CPUArchState *env);
+
 #endif /* SEQEMU_H */

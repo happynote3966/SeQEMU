@@ -385,7 +385,7 @@ void seqemu_check_control_flow(CPUArchState *env){
 	target_ulong eip = env->eip;
 	int i;
 
-	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
+	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
 
 	if(checking_state){
 		fprintf(stderr,"[STACK] env->regs[4] + 4 = 0x%x , checking_return_address_pointer = 0x%x\n",env->regs[4] - 4,checking_return_address_pointer);
@@ -417,4 +417,113 @@ void seqemu_check_control_flow(CPUArchState *env){
 			}
 		}
 	}
+}
+
+// feature-007 Checking Heap Chunk
+
+target_ulong heap_func_return_address;
+target_ulong heap_func_arg_value;
+target_ulong heap_func_allocated_address[100] = {0};
+target_ulong heap_func_freed_address[100] = {0};
+int checking_return_address = 0;
+
+void seqemu_check_heap_metadata(CPUArchState *env){
+	int i,index;
+	target_ulong eip = env->eip;
+
+	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
+
+	if(!checking_return_address){
+		for(i = 0; i < seqemu_target_func_num; i++){
+			if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_MALLOC){
+				target_ulong first_arg = env->regs[4] + 4;
+				target_ulong return_address = env->regs[4];
+				heap_func_arg_value = *(uint32_t *)(first_arg + seqemu_guest_base);
+				heap_func_return_address = *(uint32_t *)(return_address + seqemu_guest_base);
+				
+				if(strcmp(target_func[i].name,"malloc") == 0){
+					fprintf(stderr,"[MALLOC] malloc(0x%x) is called!\n",heap_func_arg_value);
+					checking_return_address = 1;
+				}else if(strcmp(target_func[i].name,"free") == 0){
+					fprintf(stderr,"[MALLOC] free(0x%x) is called!\n",heap_func_arg_value);
+
+					for(index = 0; index < 100; index++){
+						if(heap_func_freed_address[index] == heap_func_arg_value){
+							*(uint32_t *)(first_arg + seqemu_guest_base) = 0x0;
+							fprintf(stderr,"[!!!!!!] DOUBLE FREE detected! free arg is already freed! Overwrite zero!\n");
+							break;
+						}
+					}
+
+					int checking_allocated_address = 0x0;
+
+					for(index = 0; index < 100; index++){
+						if(heap_func_allocated_address[index] == heap_func_arg_value){
+							checking_allocated_address = 0x1;
+							break;
+						}
+					}
+
+					if(!checking_allocated_address){
+						fprintf(stderr,"[!!!!!!] Not allocated memory freed! Overwrite zero!\n");
+						*(uint32_t *)(first_arg + seqemu_guest_base) = 0x0;
+					}
+
+					// allocated list update
+					for(index = 0; index < 100; index++){
+						if(heap_func_allocated_address[index] == heap_func_arg_value){
+							heap_func_allocated_address[index] = 0x0;
+							break;
+						}
+					}
+
+					// freed list update
+					for(index = 0; index < 100; index++){
+						if(heap_func_freed_address[index] == 0x0){
+							heap_func_freed_address[index] = heap_func_arg_value;
+							break;
+						}
+					}
+					checking_return_address = 2;
+				}
+
+				fprintf(stderr,"[MALLOC] return address is 0x%x\n",heap_func_return_address);
+
+				break;
+			}
+		}
+	}else{
+		if(eip == heap_func_return_address){
+			target_ulong return_value = env->regs[0];
+			switch(checking_return_address){
+				case 0x1:
+					// allocated list update
+					for(index = 0; index < 100; index++){
+						if(heap_func_allocated_address[index] == 0x0){
+							heap_func_allocated_address[index] = return_value;
+							break;
+						}
+					}
+
+					// freed list update
+					for(index = 0; index < 100; index++){
+						if(heap_func_freed_address[index] == return_value){
+							heap_func_freed_address[index] = 0x0;
+							break;
+						}
+					}
+
+					fprintf(stderr,"[MALLOC] malloc(0x%x) -> 0x%x\n",heap_func_arg_value,return_value);
+					break;
+				case 0x2:
+					fprintf(stderr,"[MALLOC] free(0x%x) -> 0x%x\n",heap_func_arg_value,return_value);
+					break;
+			}
+
+			heap_func_arg_value = 0x0;
+			heap_func_return_address = 0x0;
+			checking_return_address = 0x0;
+		}
+	}
+
 }
