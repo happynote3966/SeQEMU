@@ -157,6 +157,7 @@ void seqemu_read_elf(int fd){
 		buf[EI_MAG1] == ELFMAG1 &&
 		buf[EI_MAG2] == ELFMAG2 &&
 		buf[EI_MAG3] == ELFMAG3)){
+		fprintf(stderr,"[!] This is not ELF!\n");
 		exit(-1);
 	}
 
@@ -171,13 +172,21 @@ void seqemu_read_elf(int fd){
 
 
 	// Find the .shstrtab
+	// .shstrtab is string table of section header.
+	// It is starts 0x00,0x2e,0x(first char of section header), so checking that first byte and second byte.
 	for(i = 0; i < elfh->e_shnum; i++){
 		pread(fd,sh_shstrtab,sizeof(Elf32_Shdr),elfh->e_shoff + sizeof(Elf32_Shdr) * i);
 		uint8_t bytes[2];
 		pread(fd,bytes,sizeof(uint8_t) * 2,sh_shstrtab->sh_offset);
 		if(bytes[0] == 0x0 && bytes[1] == 0x2e){
+			fprintf(stderr,"[+] Find .shstrtab! In %d section.\n",i);
 			break;
 		}
+	}
+
+	if(i == elfh->e_shnum){
+		fprintf(stderr,"[!] .shstrtab is not found! Exiting...\n");
+		exit(-1);
 	}
 
 	// Read the Contents of .shstrtab
