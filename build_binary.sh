@@ -48,11 +48,11 @@ gcc -o test-dangerous-pie -m32 -fPIE -pie -z execstack -fno-stack-protector -Wl,
 
 cat <<EOF > test-format.c
 #include <stdio.h>
-char format_string[] = "formatstring %n %n %n\n";
+char format_string[] = "formatstring %n %x %x\n";
 char print_string[] = "print_string\n";
 int main(void){
 	int i = 100;
-	printf(format_string,i,i,print_string);
+	printf(format_string,1,2,3);
 	return 0;
 }
 

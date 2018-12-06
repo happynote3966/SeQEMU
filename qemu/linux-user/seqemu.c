@@ -6,6 +6,7 @@
 #include <sys/stat.h>	// fstat,open
 #include <fcntl.h>	// open
 #include "seqemu.h"
+#include <regex.h>	// reg
 //#include "qemu.h"	// image_info
 //#include "include/exec/user/abitypes.h" // abi_ulong
 //#include <stdio.h>	// fprintf
@@ -353,10 +354,15 @@ void seqemu_read_elf(int fd){
 
 
 // Feature-005 Restricting Format String
+// Feature-009 PowerUp the Restricting Format String feature
+
 
 void seqemu_check_format_string(CPUArchState *env){
 	target_ulong eip = env->eip;
-	int i;
+	int i,j;
+	unsigned int count_of_format_parameter = 0;
+	char *string;
+	regmatch_t *pmatch;
 
 	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
 
@@ -364,21 +370,95 @@ void seqemu_check_format_string(CPUArchState *env){
 		if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_FORMAT){
 			target_ulong first_arg = env->regs[4] + 4;
 			uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
-			char *s = (char *)(instack_value + seqemu_guest_base);
+			char *format_string = (char *)(instack_value + seqemu_guest_base);
+			count_of_format_parameter = seqemu_util_count_format_string_parameter(format_string);
 
-			char *percent_n_str = NULL;
-			percent_n_str = strstr(s,"%n");
+			fprintf(stderr,"[DEBUG] FORMAT : format parameter is %d\n",count_of_format_parameter);
 
-			while(percent_n_str != NULL){
-				fprintf(stderr,"[DEBUG] str %s\n",percent_n_str);
-				percent_n_str[0] = '7';
-				percent_n_str[1] = '8';
-				percent_n_str = strstr(percent_n_str,"%n");
+			string = format_string;
+			for(j = 0; j < count_of_format_parameter; j++){
+				pmatch = seqemu_util_get_pointer_of_format_string_parameter(string);
+				if(seqemu_util_is_n_format(&string[pmatch[0].rm_so],pmatch[0].rm_eo - pmatch[0].rm_so)){
+					fprintf(stderr,"[DEBUG] FORMAT : n parameter is number %d\n", j + 1);
+					int k;
+					for(k = 0; k < pmatch[0].rm_eo - pmatch[0].rm_so; k++){
+						string[pmatch[0].rm_so + k] = 'x';
+					}
+					seqemu_util_adjust_stack_args((unsigned int)j + 1,count_of_format_parameter,first_arg);
+				}
+				string = &string[pmatch[0].rm_eo];
 			}
 
 			break;
 		}
 	}
+}
+
+unsigned int seqemu_util_count_format_string_parameter(char *format_string){
+	unsigned int count = 0;
+	char *str = format_string;
+	regmatch_t *pmatch;
+
+	pmatch = seqemu_util_get_pointer_of_format_string_parameter(str);
+
+	while(pmatch != NULL){
+		count++;
+		str = &str[(int)pmatch[0].rm_eo];
+		pmatch = seqemu_util_get_pointer_of_format_string_parameter(str);
+	}
+
+	g_free(pmatch);
+
+	return count;
+
+}
+
+
+regmatch_t *seqemu_util_get_pointer_of_format_string_parameter(char *format_string){
+	int match_number = 2;
+	regmatch_t *pmatch;
+	regex_t preg;
+	pmatch = (regmatch_t *)g_malloc(sizeof(regmatch_t) * match_number);
+
+
+	// regular expression compile
+	if(regcomp(&preg,"%[ ,#+-]?([1-9][0-9]*|[\*])?(([.]([1-9][0-9]*)|[*$]))?([hlLFN])?[diuXxoqbpscSCfeEgGn]",REG_EXTENDED | REG_NEWLINE) != 0){
+		fprintf(stderr,"[FORMAT] regcomp error\n");
+		exit(-1);
+	}
+
+	// if regular expression is matching, return regmatch_t struct.
+	if(regexec(&preg,format_string,match_number,pmatch,0) != 0){
+		regfree(&preg);
+		return NULL;
+	}else{
+		regfree(&preg);
+		return pmatch;
+	}
+
+}
+
+unsigned int seqemu_util_is_n_format(char *s, unsigned int len){
+	int i;
+
+	for(i = 0; i < len; i++){
+		if(s[i] == 'n'){
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+void seqemu_util_adjust_stack_args(unsigned int erase_arg_index, unsigned int number_of_args,target_ulong first_arg){
+	int i;
+	uint32_t tmp_value;
+	for(i = erase_arg_index; i < number_of_args; i++){
+		tmp_value = *(uint32_t *)(((i + 1) * 4) + first_arg + seqemu_guest_base);
+		*(uint32_t *)((i * 4) + first_arg + seqemu_guest_base) = tmp_value;
+	}
+	uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
+	
 }
 
 // feature-006 Checking Control Flow

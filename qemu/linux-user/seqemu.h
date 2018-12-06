@@ -5,7 +5,7 @@
 #include "qemu.h"
 
 #include <stdint.h>
-
+#include <regex.h>
 extern unsigned long seqemu_guest_base;
 extern struct image_info seqemu_image_info;
 
@@ -41,6 +41,14 @@ typedef struct{
 
 // feature-005 Restricting Format String
 void seqemu_check_format_string(CPUArchState *env);
+// feature-009 PowerUp the Restricting Format String feature
+unsigned int seqemu_util_count_format_string_parameter(char *format_string);
+
+regmatch_t *seqemu_util_get_pointer_of_format_string_parameter(char *format_string);
+
+unsigned int seqemu_util_is_n_format(char *s, unsigned int len);
+void seqemu_util_adjust_stack_args(unsigned int erase_arg_index, unsigned int number_of_args,target_ulong first_arg);
+
 
 // feature-006 Checking Control Flow
 void seqemu_check_control_flow(CPUArchState *env);
