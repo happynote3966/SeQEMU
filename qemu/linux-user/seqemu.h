@@ -16,12 +16,12 @@ void seqemu_save_image_info(struct image_info *info);
 void seqemu_print_image_info(void);
 
 // feature-002 Filtering the Dangerous Functions
-
+// feature-010 Random output of Characters
 void seqemu_bswap_2(void *p);
 void seqemu_bswap_4(void *p);
 
 void seqemu_read_elf(int fd);
-
+void seqemu_random_output_of_characters(void);
 typedef struct{
 	char *name;
 	//unsigned int addr;

@@ -8,4 +8,4 @@ cd build_i386_linux_user
 make -j2
 
 
-cp -R ../resources ./
+cp -R ../resources ./i386-linux-user

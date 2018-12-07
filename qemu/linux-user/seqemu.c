@@ -5,8 +5,11 @@
 #include <sys/types.h>	// fstat,open
 #include <sys/stat.h>	// fstat,open
 #include <fcntl.h>	// open
+#include <stdlib.h>	// rand,srand
+#include <time.h>	// time
 #include "seqemu.h"
 #include <regex.h>	// reg
+#include <dirent.h>	// opendir,readdir
 //#include "qemu.h"	// image_info
 //#include "include/exec/user/abitypes.h" // abi_ulong
 //#include <stdio.h>	// fprintf
@@ -315,41 +318,93 @@ void seqemu_read_elf(int fd){
 
 	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
 		if(target_func[i].type == SEQEMU_FUNC_TYPE_DANGEROUS){
-
-
-			// Open dame.txt and get the file size
-
-			struct stat stbuf;
-			int kohinata_fd = open("../resources/dame.txt",O_RDONLY);
-			long file_size;
-			char *output_buffer;
-
-			if(kohinata_fd == -1){
-				fprintf(stderr,"[ERROR!] Can't open \"dame.txt\" !\n");
-				exit(-1);
-			}
-
-			if(fstat(kohinata_fd,&stbuf) == -1){
-				fprintf(stderr,"[ERROR!] Can't get the file size!\n");
-				exit(-1);
-			}
-
-			file_size = stbuf.st_size;
-
-			output_buffer = (char *)g_malloc(sizeof(char) * file_size);
-
-			if(output_buffer == NULL){
-				fprintf(stderr,"[ERROR!] Can't get the output_buffer memory!\n");
-			}
-
-			read(kohinata_fd,output_buffer,file_size);
-			fprintf(stderr,"\n\n%s\n",output_buffer);
-			fprintf(stderr,"\n[ABORT!] Dangerous function is EXIST!\n");
-			exit(-1);
+			seqemu_random_output_of_characters();
 		}
 	}
 
 
+}
+
+
+// Feature-010 Random output of Characters
+void seqemu_random_output_of_characters(void){
+	// Open dame.txt and get the file size
+	struct stat stbuf;
+	int character_fd;
+	//int character_fd = open("resources/dame.txt",O_RDONLY)
+	long file_size;
+	char *output_buffer;
+	int file_number;
+	char file_name_buf[30] = {0};
+	DIR *dir;
+	unsigned int count_of_files = 0;
+	struct dirent *dp;
+	// open DIR and count of files in the DIR
+	dir = opendir("resources");
+	if(dir == NULL){
+		fprintf(stderr,"[ERROR] No such Directory");
+	}
+
+	for(dp = readdir(dir); dp != NULL; dp = readdir(dir)){
+		if((strncmp(dp->d_name,".",strlen(".")) == 0) || (strncmp(dp->d_name,"..",strlen("..")) == 0)){
+			continue;
+		}
+		count_of_files++;
+	}
+	closedir(dir);
+
+	// will be deleted
+	fprintf(stderr,"%d",count_of_files);
+	
+	// make filename
+	strcpy(file_name_buf,"resources/");
+	dir = opendir("resources");
+	if(dir == NULL){
+		fprintf(stderr,"[ERROR] No such Directory");
+	}
+
+	srand((unsigned)time(NULL));
+	file_number = rand() % count_of_files;
+
+	for(dp = readdir(dir); dp != NULL; dp = readdir(dir)){
+		if((strncmp(dp->d_name,".",strlen(".")) == 0) || (strncmp(dp->d_name,"..",strlen("..")) == 0)){
+			continue;
+		}
+
+		if(file_number == 0){
+			strcat(file_name_buf,dp->d_name);
+			break;
+		}
+		
+		file_number--;
+	}
+
+	
+	// open and read and write file
+	character_fd = open(file_name_buf,O_RDONLY);
+	
+	if(character_fd == -1){
+		fprintf(stderr,"[ERROR!] Can't open \"%s\" !\n",file_name_buf);
+		exit(-1);
+	}
+
+	if(fstat(character_fd,&stbuf) == -1){
+		fprintf(stderr,"[ERROR!] Can't get the file size!\n");
+		exit(-1);
+	}
+
+	file_size = stbuf.st_size;
+
+	output_buffer = (char *)g_malloc(sizeof(char) * file_size);
+
+	if(output_buffer == NULL){
+		fprintf(stderr,"[ERROR!] Can't get the output_buffer memory!\n");
+	}
+
+	read(character_fd,output_buffer,file_size);
+	fprintf(stderr,"\n\n%s\n",output_buffer);
+	fprintf(stderr,"\n[ABORT!] Dangerous function is EXIST!\n");
+	exit(-1);
 }
 
 
