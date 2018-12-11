@@ -399,6 +399,8 @@ struct qemu_argument {
     const char *help;
 };
 
+// feature-011 add options of security feature
+
 static const struct qemu_argument arg_table[] = {
     {"h",          "",                 false, handle_arg_help,
      "",           "print this help"},
@@ -443,6 +445,14 @@ static const struct qemu_argument arg_table[] = {
      "",           "[[enable=]<pattern>][,events=<file>][,file=<file>]"},
     {"version",    "QEMU_VERSION",     false, handle_arg_version,
      "",           "display version information and exit"},
+    {"seqemu-disable-format","SEQEMU_DISABLE_FORMAT",false,handle_arg_disable_format,
+     "",           "disable format string security feature"},
+    {"seqemu-disable-buffer","SEQEMU_DISABLE_BUFFER",false,handle_arg_disable_buffer,
+     "",           "disable buffer overflow security feature"},
+    {"seqemu-disable-heap","SEQEMU_DISABLE_HEAP",false,handle_arg_disable_heap,
+     "",           "disable heap corruption security feature"},
+    {"seqemu-disable-all","SEQEMU_DISABLE_ALL",false,handle_arg_disable_all,
+     "",           "disable all security feature"},
     {NULL, NULL, false, NULL, NULL, NULL}
 };
 

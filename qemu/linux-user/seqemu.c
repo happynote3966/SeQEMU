@@ -16,7 +16,10 @@
 
 unsigned long seqemu_guest_base;
 struct image_info seqemu_image_info;
-
+// feature-011 add options of security feature
+int seqemu_disable_format = 0;
+int seqemu_disable_buffer = 0;
+int seqemu_disable_heap = 0;
 
 void seqemu_print_debug(void){
     fprintf(stderr,"SEQEMU DEBUGGING!\n");
@@ -85,6 +88,29 @@ void seqemu_print_image_info(void){
 	fprintf(stderr,"start_stack =0x%lx [0x%x]\n",seqemu_image_info.start_stack + b, seqemu_image_info.start_stack);
 	fprintf(stderr,"env_start   =0x%lx [0x%x]\n",seqemu_image_info.arg_end + (abi_ulong)sizeof(abi_ulong) + b, seqemu_image_info.arg_end + (abi_ulong)sizeof(abi_ulong));
 	fprintf(stderr,"auxv_start  =0x%lx [0x%x]\n",seqemu_image_info.saved_auxv + b, seqemu_image_info.saved_auxv);
+}
+
+
+// feature-011 add options of security feature
+
+
+
+void handle_arg_disable_format(const char *arg){
+	seqemu_disable_format = 1;
+}
+
+void handle_arg_disable_buffer(const char *arg){
+	seqemu_disable_buffer = 1;
+}
+
+void handle_arg_disable_heap(const char *arg){
+	seqemu_disable_heap = 1;
+}
+
+void handle_arg_disable_all(const char *arg){
+	seqemu_disable_format = 1;
+	seqemu_disable_buffer = 1;
+	seqemu_disable_heap = 1;
 }
 
 // feature-002 Filtering the Dangerous Functions
@@ -419,6 +445,10 @@ void seqemu_check_format_string(CPUArchState *env){
 	char *string;
 	regmatch_t *pmatch;
 
+	if(seqemu_disable_format){
+		return;
+	}
+
 	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
 
 	for(i = 0; i < seqemu_target_func_num; i++){
@@ -529,6 +559,11 @@ void seqemu_check_control_flow(CPUArchState *env){
 	target_ulong eip = env->eip;
 	int i;
 
+	if(seqemu_disable_buffer){
+		return;
+	}
+
+
 	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
 
 	if(checking_state){
@@ -574,6 +609,11 @@ int checking_return_address = 0;
 void seqemu_check_heap_metadata(CPUArchState *env){
 	int i,index;
 	target_ulong eip = env->eip;
+
+	if(seqemu_disable_heap){
+		return;
+	}
+
 
 	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
 

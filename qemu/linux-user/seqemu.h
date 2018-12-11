@@ -8,12 +8,22 @@
 #include <regex.h>
 extern unsigned long seqemu_guest_base;
 extern struct image_info seqemu_image_info;
+// feature-011 add options of security feature
+extern int seqemu_disable_format;
+extern int seqemu_disable_buffer;
+extern int seqemu_disable_heap;
 
 void seqemu_print_debug(void);
 void seqemu_save_guest_base(unsigned long base);
 void seqemu_print_guest_base(void);
 void seqemu_save_image_info(struct image_info *info);
 void seqemu_print_image_info(void);
+
+// feature-011 add options of security feature
+void handle_arg_disable_format(const char *arg);
+void handle_arg_disable_buffer(const char *arg);
+void handle_arg_disable_heap(const char *arg);
+void handle_arg_disable_all(const char *arg);
 
 // feature-002 Filtering the Dangerous Functions
 // feature-010 Random output of Characters
