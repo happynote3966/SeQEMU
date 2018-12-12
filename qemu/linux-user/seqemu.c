@@ -118,7 +118,7 @@ void handle_arg_disable_all(const char *arg){
 }
 
 void handle_arg_seqemu(const char *arg){
-	printf("SeQEMU Version 1.0");
+	fprintf(stderr,"SeQEMU Version 1.0\n");
 }
 
 // feature-002 Filtering the Dangerous Functions
