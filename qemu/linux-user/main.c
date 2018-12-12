@@ -445,6 +445,8 @@ static const struct qemu_argument arg_table[] = {
      "",           "[[enable=]<pattern>][,events=<file>][,file=<file>]"},
     {"version",    "QEMU_VERSION",     false, handle_arg_version,
      "",           "display version information and exit"},
+    {"seqemu-disable-dangerous","SEQEMU_DISABLE_DANGEROUS",false,handle_arg_disable_dangerous,
+     "",           "disable dangerous function security feature"},
     {"seqemu-disable-format","SEQEMU_DISABLE_FORMAT",false,handle_arg_disable_format,
      "",           "disable format string security feature"},
     {"seqemu-disable-buffer","SEQEMU_DISABLE_BUFFER",false,handle_arg_disable_buffer,
@@ -453,6 +455,8 @@ static const struct qemu_argument arg_table[] = {
      "",           "disable heap corruption security feature"},
     {"seqemu-disable-all","SEQEMU_DISABLE_ALL",false,handle_arg_disable_all,
      "",           "disable all security feature"},
+    {"seqemu","SEQEMU",false,handle_arg_seqemu,
+     "","show the SeQEMU version"},
     {NULL, NULL, false, NULL, NULL, NULL}
 };
 

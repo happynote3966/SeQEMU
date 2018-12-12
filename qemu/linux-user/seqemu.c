@@ -17,6 +17,7 @@
 unsigned long seqemu_guest_base;
 struct image_info seqemu_image_info;
 // feature-011 add options of security feature
+int seqemu_disable_dangerous = 0;
 int seqemu_disable_format = 0;
 int seqemu_disable_buffer = 0;
 int seqemu_disable_heap = 0;
@@ -93,7 +94,9 @@ void seqemu_print_image_info(void){
 
 // feature-011 add options of security feature
 
-
+void handle_arg_disable_dangerous(const char *arg){
+	seqemu_disable_dangerous = 1;
+}
 
 void handle_arg_disable_format(const char *arg){
 	seqemu_disable_format = 1;
@@ -108,9 +111,14 @@ void handle_arg_disable_heap(const char *arg){
 }
 
 void handle_arg_disable_all(const char *arg){
+	seqemu_disable_dangerous = 1;
 	seqemu_disable_format = 1;
 	seqemu_disable_buffer = 1;
 	seqemu_disable_heap = 1;
+}
+
+void handle_arg_seqemu(const char *arg){
+	printf("SeQEMU Version 1.0");
 }
 
 // feature-002 Filtering the Dangerous Functions
@@ -341,10 +349,12 @@ void seqemu_read_elf(int fd){
 
 	// If DANGEROUS FUNCTION is EXISTS, display Miho Kohinata
 	
+	if(!seqemu_disable_dangerous){
 
-	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
-		if(target_func[i].type == SEQEMU_FUNC_TYPE_DANGEROUS){
-			seqemu_random_output_of_characters();
+		for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
+			if(target_func[i].type == SEQEMU_FUNC_TYPE_DANGEROUS){
+				seqemu_random_output_of_characters();
+			}
 		}
 	}
 
