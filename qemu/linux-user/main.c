@@ -453,6 +453,8 @@ static const struct qemu_argument arg_table[] = {
      "",           "disable buffer overflow security feature"},
     {"seqemu-disable-heap","SEQEMU_DISABLE_HEAP",false,handle_arg_disable_heap,
      "",           "disable heap corruption security feature"},
+    {"seqemu-disable-syscall","SEQEMU_DISABLE_SYSCALL",false,handle_arg_disable_syscall,
+     "",           "disable system call security feature"},
     {"seqemu-disable-all","SEQEMU_DISABLE_ALL",false,handle_arg_disable_all,
      "",           "disable all security feature"},
     {"seqemu","SEQEMU",false,handle_arg_seqemu,

@@ -21,6 +21,10 @@ int seqemu_disable_dangerous = 0;
 int seqemu_disable_format = 0;
 int seqemu_disable_buffer = 0;
 int seqemu_disable_heap = 0;
+int seqemu_disable_syscall = 0;
+
+// feature-012 Checking System Call
+int seqemu_execute_libc_start_main = 0;
 
 void seqemu_print_debug(void){
     fprintf(stderr,"SEQEMU DEBUGGING!\n");
@@ -110,11 +114,16 @@ void handle_arg_disable_heap(const char *arg){
 	seqemu_disable_heap = 1;
 }
 
+void handle_arg_disable_syscall(const char *arg){
+	seqemu_disable_syscall = 1;
+}
+
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_disable_format = 1;
 	seqemu_disable_buffer = 1;
 	seqemu_disable_heap = 1;
+	seqemu_disable_syscall = 1;
 }
 
 void handle_arg_seqemu(const char *arg){
@@ -122,7 +131,7 @@ void handle_arg_seqemu(const char *arg){
 }
 
 // feature-002 Filtering the Dangerous Functions
-
+// feature-012 Checking System Call
 
 static const char *dangerous_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
 	"gets",
@@ -144,6 +153,11 @@ static const char *malloc_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
 static const char *buffer_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
 	"memcpy",
 	"fgets"
+};
+
+static const char *libc_start_main[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
+	"__libc_start_main",
+	""
 };
 
 
@@ -332,6 +346,13 @@ void seqemu_read_elf(int fd){
 		for(j = 0; buffer_func[j] != NULL; j++){
 			if(strcmp(buffer_func[j],target_func[i].name) == 0){
 				target_func[i].type = SEQEMU_FUNC_TYPE_BUFFER;
+				istyped = 1;
+			}
+		}
+
+		for(j = 0; libc_start_main[j] != NULL; j++){
+			if(strcmp(libc_start_main[j],target_func[i].name) == 0){
+				target_func[i].type = SEQEMU_FUNC_TYPE_LIBC_START_MAIN;
 				istyped = 1;
 			}
 		}
@@ -718,6 +739,57 @@ void seqemu_check_heap_metadata(CPUArchState *env){
 			heap_func_return_address = 0x0;
 			checking_return_address = 0x0;
 		}
+	}
+
+}
+
+// feature-012 Checking System Call
+void seqemu_check_entry_point(CPUArchState *env){
+	target_ulong eip = env->eip;
+	static int initialized = 0;
+
+	if(initialized){
+		return;
+	}
+
+	if(seqemu_image_info.entry == eip){
+		fprintf(stderr,"EIP is entry point!\n");
+		initialized = 1;
+	}
+}
+
+
+void seqemu_check_libc_start_main(CPUArchState *env){
+	target_ulong eip = env->eip;
+	static int initialized = 0;
+	int i;
+
+	if(initialized){
+		return;
+	}
+
+	for(i = 0; i < seqemu_target_func_num; i++){
+		if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_LIBC_START_MAIN){
+			fprintf(stderr,"EIP is LIBC_START_MAIN!\n");
+			initialized = 1;
+			seqemu_execute_libc_start_main = 1;
+		}
+	}
+}
+
+void seqemu_check_system_call(CPUArchState *env){
+	target_ulong eip = env->eip;
+
+	if(seqemu_disable_syscall){
+		return;
+	}
+
+	if(env->regs[R_EAX] != 0x5){
+		return;
+	}
+
+	if(strcmp("flag.txt",(char *)(env->regs[R_EBX] + seqemu_guest_base)) == 0){
+		fprintf(stderr,"flag.txt is open!\n");
 	}
 
 }

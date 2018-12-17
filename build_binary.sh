@@ -100,3 +100,34 @@ EOF
 
 gcc -o test-malloc -m32 test-malloc.c
 
+
+cat <<EOF > test-pie.c
+#include <stdio.h>
+
+int main(void){
+	printf("main = %p\n",main);
+	return 0;
+}
+
+EOF
+
+gcc -o test-pie -m32 -fPIE -pie test-pie.c
+
+
+cat <<EOF > test-open.c
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+int main(void){
+	int fd = open("flag.txt",O_RDONLY);
+	printf("%d\n",open);
+	return 0;
+}
+
+EOF
+
+gcc -o test-open -m32 -fPIE -pie test-open.c
+
+echo "FLAG{THIS_IS_A_FLAG}" > flag.txt
+

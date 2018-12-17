@@ -21,10 +21,12 @@ void seqemu_save_image_info(struct image_info *info);
 void seqemu_print_image_info(void);
 
 // feature-011 add options of security feature
+// feature-012 Checking System Call
 void handle_arg_disable_dangerous(const char *arg);
 void handle_arg_disable_format(const char *arg);
 void handle_arg_disable_buffer(const char *arg);
 void handle_arg_disable_heap(const char *arg);
+void handle_arg_disable_syscall(const char *arg);
 void handle_arg_disable_all(const char *arg);
 void handle_arg_seqemu(const char *arg);
 
@@ -50,7 +52,7 @@ typedef struct{
 #define SEQEMU_FUNC_TYPE_MALLOC 0x3
 #define SEQEMU_FUNC_TYPE_BUFFER 0x4
 #define SEQEMU_FUNC_TYPE_OTHER 0x5
-
+#define SEQEMU_FUNC_TYPE_LIBC_START_MAIN 0x6
 
 // feature-005 Restricting Format String
 void seqemu_check_format_string(CPUArchState *env);
@@ -69,4 +71,8 @@ void seqemu_check_control_flow(CPUArchState *env);
 // feature-007 Checking Heap Chunk
 void seqemu_check_heap_metadata(CPUArchState *env);
 
+// feature-012 Checking System Call
+void seqemu_check_entry_point(CPUArchState *env);
+void seqemu_check_libc_start_main(CPUArchState *env);
+void seqemu_check_system_call(CPUArchState *env);
 #endif /* SEQEMU_H */
