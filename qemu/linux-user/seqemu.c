@@ -7,26 +7,14 @@
 #include <fcntl.h>	// open
 #include "seqemu.h"
 #include <regex.h>	// reg
-//#include "qemu.h"	// image_info
-//#include "include/exec/user/abitypes.h" // abi_ulong
-//#include <stdio.h>	// fprintf
 
 unsigned long seqemu_guest_base;
 struct image_info seqemu_image_info;
 
 
-void seqemu_print_debug(void){
-    fprintf(stderr,"SEQEMU DEBUGGING!\n");
-}
-
 void seqemu_save_guest_base(unsigned long base){
     seqemu_guest_base = base;
 }
-
-void seqemu_print_guest_base(void){
-    fprintf(stderr,"[DEBUG] GUEST BASE = %lx\n",seqemu_guest_base);
-}
-
 
 void seqemu_save_image_info(struct image_info *info){
 	seqemu_image_info.load_bias = info->load_bias;
@@ -110,30 +98,6 @@ static const char *buffer_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
 };
 
 
-
-void seqemu_bswap_2(void *p){
-	uint8_t tmp;
-	uint8_t *sp;
-
-	sp = (uint8_t *)p;
-	tmp = sp[0];
-	sp[0] = sp[1];
-	sp[1] = tmp;
-}
-
-void seqemu_bswap_4(void *p){
-	uint8_t tmp;
-	uint8_t *sp;
-
-	sp = (uint8_t *)p;
-	tmp = sp[0];
-	sp[0] = sp[3];
-	sp[3] = tmp;
-
-	tmp = sp[1];
-	sp[1] = sp[2];
-	sp[2] = tmp;
-}
 
 Seqemu_target_func *target_func;
 unsigned int seqemu_target_func_num;
@@ -315,36 +279,8 @@ void seqemu_read_elf(int fd){
 
 	for(i = 0; i < sh_relplt->sh_size / sizeof(Elf32_Rel); i++){
 		if(target_func[i].type == SEQEMU_FUNC_TYPE_DANGEROUS){
-
-
-			// Open dame.txt and get the file size
-
-			struct stat stbuf;
-			int kohinata_fd = open("../resources/dame.txt",O_RDONLY);
-			long file_size;
-			char *output_buffer;
-
-			if(kohinata_fd == -1){
-				fprintf(stderr,"[ERROR!] Can't open \"dame.txt\" !\n");
-				exit(-1);
-			}
-
-			if(fstat(kohinata_fd,&stbuf) == -1){
-				fprintf(stderr,"[ERROR!] Can't get the file size!\n");
-				exit(-1);
-			}
-
-			file_size = stbuf.st_size;
-
-			output_buffer = (char *)g_malloc(sizeof(char) * file_size);
-
-			if(output_buffer == NULL){
-				fprintf(stderr,"[ERROR!] Can't get the output_buffer memory!\n");
-			}
-
-			read(kohinata_fd,output_buffer,file_size);
-			fprintf(stderr,"\n\n%s\n",output_buffer);
 			fprintf(stderr,"\n[ABORT!] Dangerous function is EXIST!\n");
+			fprintf(stderr,"Function name is %s\n",target_func[i].name);
 			exit(-1);
 		}
 	}

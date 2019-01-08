@@ -733,7 +733,6 @@ int main(int argc, char **argv, char **envp)
 
     //SeQEMU
     seqemu_save_guest_base(guest_base);
-    seqemu_print_guest_base();
 
     /*
      * Read in mmap_min_addr kernel parameter.  This value is used
