@@ -75,4 +75,17 @@ void seqemu_check_heap_metadata(CPUArchState *env);
 void seqemu_check_entry_point(CPUArchState *env);
 void seqemu_check_libc_start_main(CPUArchState *env);
 void seqemu_check_system_call(CPUArchState *env);
+// feature-013 Adding System Call Filtering List
+void seqemu_load_syscall_filtering_list(void);
+
+typedef struct{
+	unsigned int syscall_number;
+	unsigned int has_arg;
+	unsigned int arg_index;
+	unsigned int arg_type;//0 ... num, 1 ... str
+	union{
+		char *str;
+		int num;
+	}u;
+}Seqemu_syscall_filtering_list;
 #endif /* SEQEMU_H */

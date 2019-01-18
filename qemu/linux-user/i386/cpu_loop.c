@@ -93,7 +93,6 @@ void cpu_loop(CPUX86State *env)
         trapnr = cpu_exec(cs);
         cpu_exec_end(cs);
         process_queued_cpu_work(cs);
-	fprintf(stderr,"Trapnr = 0x%x ",trapnr);
         switch(trapnr) {
         case 0x80:
             // SeQEMU

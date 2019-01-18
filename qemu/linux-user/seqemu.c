@@ -397,7 +397,7 @@ void seqemu_random_output_of_characters(void){
 	unsigned int count_of_files = 0;
 	struct dirent *dp;
 	// open DIR and count of files in the DIR
-	dir = opendir("resources");
+	dir = opendir("resources/characters");
 	if(dir == NULL){
 		fprintf(stderr,"[ERROR] No such Directory");
 	}
@@ -414,8 +414,8 @@ void seqemu_random_output_of_characters(void){
 	fprintf(stderr,"%d",count_of_files);
 	
 	// make filename
-	strcpy(file_name_buf,"resources/");
-	dir = opendir("resources");
+	strcpy(file_name_buf,"resources/characters/");
+	dir = opendir("resources/characters");
 	if(dir == NULL){
 		fprintf(stderr,"[ERROR] No such Directory");
 	}
@@ -744,6 +744,9 @@ void seqemu_check_heap_metadata(CPUArchState *env){
 }
 
 // feature-012 Checking System Call
+//
+
+Seqemu_syscall_filtering_list *filter;
 void seqemu_check_entry_point(CPUArchState *env){
 	target_ulong eip = env->eip;
 	static int initialized = 0;
@@ -778,18 +781,129 @@ void seqemu_check_libc_start_main(CPUArchState *env){
 }
 
 void seqemu_check_system_call(CPUArchState *env){
-	target_ulong eip = env->eip;
+	int i;
+	int syscall_arg_table[5];
+	syscall_arg_table[0] = R_EBX;
+	syscall_arg_table[1] = R_ECX;
+	syscall_arg_table[2] = R_EDX;
+	syscall_arg_table[3] = R_ESI;
+	syscall_arg_table[4] = R_EDI;
 
 	if(seqemu_disable_syscall){
 		return;
 	}
 
-	if(env->regs[R_EAX] != 0x5){
-		return;
-	}
 
+	// Adding System Call Trace
+	fprintf(stderr,"[SYSCALL] EAX = %x EBX = %x ECX = %x EDX = %x ESI = %x EDI = %X EBP = %x ESP = %x\n",
+		env->regs[R_EAX],env->regs[R_EBX],env->regs[R_ECX],env->regs[R_EDX],env->regs[R_ESI],env->regs[R_EDI],env->regs[R_EBP],env->regs[R_ESP]);
+
+	i = 0;
+	while(filter[i].syscall_number != 0){
+		if(filter[i].syscall_number == env->regs[R_EAX]){
+			if(filter[i].has_arg == 0){
+				fprintf(stderr,"[SYSCALL] Number %x system call is prohibited!\n",filter[i].syscall_number);
+				exit(-1);
+			}else{
+				if(filter[i].arg_type == 0){
+					if(filter[i].u.num == env->regs[syscall_arg_table[filter[i].arg_index - 1]]){
+						fprintf(stderr,"[SYSCALL] Number %x system call index %x with %x is prohibited!\n",filter[i].syscall_number,filter[i].arg_index,filter[i].u.num);
+						exit(-1);
+					}
+				}else{
+					if(strcmp(filter[i].u.str,(char *)(env->regs[syscall_arg_table[filter[i].arg_index - 1]] + seqemu_guest_base)) == 0){
+						fprintf(stderr,"[SYSCALL] Number %x system call index %x with %s is prohibited!\n",filter[i].syscall_number,filter[i].arg_index,filter[i].u.str);
+						exit(-1);
+					}
+				}
+			}
+		}
+		i++;
+	}
+	
+
+	/*
 	if(strcmp("flag.txt",(char *)(env->regs[R_EBX] + seqemu_guest_base)) == 0){
 		fprintf(stderr,"flag.txt is open!\n");
 	}
+	*/
+
+}
+
+void seqemu_load_syscall_filtering_list(void){
+	int ret,line_num,filter_index;
+	FILE *fp;
+	unsigned int num1,num2,num3;
+	char buf1[100],buf2[100];
+
+	// counting line
+	line_num = 0;
+
+	fp = fopen("resources/syscall/filter.txt","r");
+	while(fgets(buf1,100,fp) != NULL){
+		line_num++;
+	}
+
+	fclose(fp);
+
+	// allocating system call filter list
+
+	filter = (Seqemu_syscall_filtering_list *)g_malloc(sizeof(Seqemu_syscall_filtering_list) * (line_num + 1));
+	memset(filter,0x0,sizeof(Seqemu_syscall_filtering_list) * (line_num + 1));
+	fp = fopen("resources/syscall/filter.txt","r");
+
+
+	//test variable
+	memset(buf1,0x0,100);
+	memset(buf2,0x0,100);
+
+
+	filter_index = 0;
+
+	while((ret = fscanf(fp,"%u,%u,%u,%[^,],%s",&num1,&num2,&num3,buf1,buf2)) != EOF){
+		filter[filter_index].syscall_number = num1;
+		filter[filter_index].has_arg = num2;
+		if(num2 == 0){
+			filter_index++;
+			continue;
+		}
+		filter[filter_index].arg_index = num3;
+		if(strncmp("num",buf1,3) == 0){
+			filter[filter_index].arg_type = 0;
+		}else if(strncmp("str",buf1,3) == 0){
+			filter[filter_index].arg_type = 1;
+		}else{
+			fprintf(stderr,"[SYSCALL] NO DEFINE TYPE is recognized!\n");
+			exit(-1);
+		}
+		if(filter[filter_index].arg_type == 0){
+			filter[filter_index].u.num = atoi(buf2);
+		}else{
+			filter[filter_index].u.str = strdup(buf2);
+		}
+
+		filter_index++;
+		memset(buf1,0x0,100);
+		memset(buf2,0x0,100);
+	}
+
+
+	////// DEBUG
+
+	fprintf(stderr,"[SYSCALL] SYSCALL TALBE is below\n");
+	int i;
+
+	for(i = 0; i < line_num; i++){
+		if(filter[i].arg_type == 0){
+			fprintf(stderr,"%u %u %u %u %u\n",filter[i].syscall_number,filter[i].has_arg,filter[i].arg_index,filter[i].arg_type,filter[i].u.num);
+		}else{
+			fprintf(stderr,"%u %u %u %u %s\n",filter[i].syscall_number,filter[i].has_arg,filter[i].arg_index,filter[i].arg_type,filter[i].u.str);
+
+		}
+	}
+
+	////// DEBUG END
+	
+	fclose(fp);
 
 }
