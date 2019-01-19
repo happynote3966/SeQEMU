@@ -455,6 +455,8 @@ static const struct qemu_argument arg_table[] = {
      "",           "disable heap corruption security feature"},
     {"seqemu-disable-syscall","SEQEMU_DISABLE_SYSCALL",false,handle_arg_disable_syscall,
      "",           "disable system call security feature"},
+    {"seqemu-disable-honeypot","SEQEMU_DISABLE_HONEYPOT",false,handle_arg_disable_honeypot,
+     "",           "disable honeypot feature"},
     {"seqemu-disable-all","SEQEMU_DISABLE_ALL",false,handle_arg_disable_all,
      "",           "disable all security feature"},
     {"seqemu","SEQEMU",false,handle_arg_seqemu,
@@ -749,6 +751,7 @@ int main(int argc, char **argv, char **envp)
 
     //SeQEMU
     seqemu_load_syscall_filtering_list();
+    seqemu_open_honeypot_logfile();
     seqemu_save_guest_base(guest_base);
     seqemu_print_guest_base();
 

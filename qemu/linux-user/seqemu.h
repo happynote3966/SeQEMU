@@ -27,6 +27,8 @@ void handle_arg_disable_format(const char *arg);
 void handle_arg_disable_buffer(const char *arg);
 void handle_arg_disable_heap(const char *arg);
 void handle_arg_disable_syscall(const char *arg);
+// feature-014 Adding function honey pot
+void handle_arg_disable_honeypot(const char *arg);
 void handle_arg_disable_all(const char *arg);
 void handle_arg_seqemu(const char *arg);
 
@@ -88,4 +90,8 @@ typedef struct{
 		int num;
 	}u;
 }Seqemu_syscall_filtering_list;
+
+// feature-014 Adding Function Honey Pot
+void seqemu_function_honey_pot(CPUArchState *env);
+void seqemu_open_honeypot_logfile(void);
 #endif /* SEQEMU_H */

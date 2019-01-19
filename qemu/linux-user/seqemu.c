@@ -22,6 +22,7 @@ int seqemu_disable_format = 0;
 int seqemu_disable_buffer = 0;
 int seqemu_disable_heap = 0;
 int seqemu_disable_syscall = 0;
+int seqemu_disable_honeypot = 0;
 
 // feature-012 Checking System Call
 int seqemu_execute_libc_start_main = 0;
@@ -118,12 +119,17 @@ void handle_arg_disable_syscall(const char *arg){
 	seqemu_disable_syscall = 1;
 }
 
+void handle_arg_disable_honeypot(const char *arg){
+	seqemu_disable_honeypot = 1;
+}
+
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_disable_format = 1;
 	seqemu_disable_buffer = 1;
 	seqemu_disable_heap = 1;
 	seqemu_disable_syscall = 1;
+	seqemu_disable_honeypot = 1;
 }
 
 void handle_arg_seqemu(const char *arg){
@@ -646,7 +652,7 @@ void seqemu_check_heap_metadata(CPUArchState *env){
 	}
 
 
-	fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
+	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
 
 	if(!checking_return_address){
 		for(i = 0; i < seqemu_target_func_num; i++){
@@ -907,3 +913,61 @@ void seqemu_load_syscall_filtering_list(void){
 	fclose(fp);
 
 }
+
+
+FILE *seqemu_honeypot_logfile;
+int honeypot_checking_state = 0;
+uint32_t seqemu_honeypot_ra;
+uint32_t *seqemu_honeypot_buffer_address;
+void seqemu_function_honey_pot(CPUArchState *env){
+	target_ulong eip = env->eip;
+	int i;
+	int buffer_index;
+	if(seqemu_disable_honeypot){
+		return;
+	}
+
+	//fprintf(stderr,"[HONEY] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
+
+
+	// after execute library function
+	if(honeypot_checking_state){
+		if(eip == seqemu_honeypot_ra){
+			int buffer_length = strlen((char *)seqemu_honeypot_buffer_address);
+			char *ptr = (char *)g_malloc(sizeof(char) * buffer_length);
+			memset(ptr,0x0,sizeof(char) * buffer_length);
+			strncpy(ptr,(char *)seqemu_honeypot_buffer_address,buffer_length);
+			ptr[buffer_length] = '\0';
+			char date[64];
+			time_t t = time(NULL);
+			strftime(date,sizeof(date),"%Y/%m/%d %H:%M:%S",localtime(&t));
+			fprintf(seqemu_honeypot_logfile,"[HONEY] %s %s\n",date,ptr);
+			fflush(seqemu_honeypot_logfile);
+		}
+		honeypot_checking_state = 0;
+	}else{
+	// before execute library function
+		// get RA and pointer of RA
+		for(i = 0; i < seqemu_target_func_num; i++){
+			if(target_func[i].plt_addr == eip && strcmp("fgets",target_func[i].name) == 0){
+				// get RA
+				seqemu_honeypot_ra = *(uint32_t *)(env->regs[R_ESP] + seqemu_guest_base);
+				// get buffer address
+				buffer_index = 1;
+				seqemu_honeypot_buffer_address = (uint32_t *)((*(uint32_t *)(env->regs[R_ESP] + (buffer_index * 4) + seqemu_guest_base)) + seqemu_guest_base);
+			}
+
+		}
+		honeypot_checking_state = 1;
+	}
+}
+
+
+void seqemu_open_honeypot_logfile(void){
+	if(seqemu_disable_honeypot){
+		return;
+	}
+
+	seqemu_honeypot_logfile = fopen("honeypot.log","w");
+}
+	

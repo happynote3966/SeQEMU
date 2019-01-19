@@ -21,6 +21,11 @@
 #include "qemu.h"
 #include "cpu_loop-common.h"
 
+
+// SeQEMU
+#include "linux-user/seqemu.h"
+
+
 /***********************************************************/
 /* CPUX86 core interface */
 

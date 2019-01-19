@@ -4,6 +4,30 @@ mkdir build_i386_linux_user
 cd build_i386_linux_user
 
 
+cat <<EOF > test-normal.c
+#include <stdio.h>
+int main(void){
+	char buf[100] = {0};
+
+	fgets(buf,sizeof(buf),stdin);
+	printf("%s",buf);
+	memset(buf,0x0,sizeof(buf));
+
+	fgets(buf,sizeof(buf),stdin);
+	printf("%s",buf);
+	memset(buf,0x0,sizeof(buf));
+
+	fgets(buf,sizeof(buf),stdin);
+	printf("%s",buf);
+	memset(buf,0x0,sizeof(buf));
+
+	return 0;
+}
+
+EOF
+
+gcc -o test-normal -m32 test-normal.c
+
 cat <<EOF > test-all.c
 #include <stdio.h>
 #include <string.h>
