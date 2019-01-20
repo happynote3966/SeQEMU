@@ -94,4 +94,12 @@ typedef struct{
 // feature-014 Adding Function Honey Pot
 void seqemu_function_honey_pot(CPUArchState *env);
 void seqemu_open_honeypot_logfile(void);
+void seqemu_honeypot_open_function_list(void);
+void seqemu_honeypot_write_log(char *func, char *log);
+
+typedef struct{
+	char *name;
+	unsigned int arg_index;
+}Seqemu_honeypot_function_list;
+
 #endif /* SEQEMU_H */

@@ -915,14 +915,26 @@ void seqemu_load_syscall_filtering_list(void){
 }
 
 
+///////////////////////
+// HONEYPOT
+///////////////////////
+
+const char SEQEMU_HONEYPOT_LIST_FILE[] = "resources/honeypot/function_list.txt";
+const char SEQEMU_HONEYPOT_LOG_FILE[] = "honeypot.log";
+const char SEQEMU_HONEYPOT_TIME_FORMAT[] = "%Y/%m/%d %H:%M:%S";
+
 FILE *seqemu_honeypot_logfile;
 int honeypot_checking_state = 0;
+char *seqemu_honeypot_current_target_func = NULL;
 uint32_t seqemu_honeypot_ra;
 uint32_t *seqemu_honeypot_buffer_address;
+Seqemu_honeypot_function_list *honeypot_list;
+
 void seqemu_function_honey_pot(CPUArchState *env){
 	target_ulong eip = env->eip;
 	int i;
 	int buffer_index;
+	int honeypot_index;
 	if(seqemu_disable_honeypot){
 		return;
 	}
@@ -933,32 +945,36 @@ void seqemu_function_honey_pot(CPUArchState *env){
 	// after execute library function
 	if(honeypot_checking_state){
 		if(eip == seqemu_honeypot_ra){
-			int buffer_length = strlen((char *)seqemu_honeypot_buffer_address);
-			char *ptr = (char *)g_malloc(sizeof(char) * buffer_length);
-			memset(ptr,0x0,sizeof(char) * buffer_length);
-			strncpy(ptr,(char *)seqemu_honeypot_buffer_address,buffer_length);
-			ptr[buffer_length] = '\0';
-			char date[64];
-			time_t t = time(NULL);
-			strftime(date,sizeof(date),"%Y/%m/%d %H:%M:%S",localtime(&t));
-			fprintf(seqemu_honeypot_logfile,"[HONEY] %s %s\n",date,ptr);
-			fflush(seqemu_honeypot_logfile);
+			seqemu_honeypot_write_log(seqemu_honeypot_current_target_func,(char *)seqemu_honeypot_buffer_address);
+			seqemu_honeypot_current_target_func = NULL;
+			honeypot_checking_state = 0;
 		}
-		honeypot_checking_state = 0;
 	}else{
 	// before execute library function
 		// get RA and pointer of RA
+		honeypot_index = 0;
+		buffer_index = 0;
 		for(i = 0; i < seqemu_target_func_num; i++){
-			if(target_func[i].plt_addr == eip && strcmp("fgets",target_func[i].name) == 0){
-				// get RA
-				seqemu_honeypot_ra = *(uint32_t *)(env->regs[R_ESP] + seqemu_guest_base);
-				// get buffer address
-				buffer_index = 1;
-				seqemu_honeypot_buffer_address = (uint32_t *)((*(uint32_t *)(env->regs[R_ESP] + (buffer_index * 4) + seqemu_guest_base)) + seqemu_guest_base);
+			if(target_func[i].plt_addr == eip){
+				while(honeypot_list[honeypot_index].name != NULL){
+					if(strcmp(honeypot_list[honeypot_index].name,target_func[i].name) == 0){
+						seqemu_honeypot_current_target_func = strdup(target_func[i].name);
+						// get RA
+						seqemu_honeypot_ra = *(uint32_t *)(env->regs[R_ESP] + seqemu_guest_base);
+						// get buffer address
+						buffer_index = honeypot_list[honeypot_index].arg_index;
+						seqemu_honeypot_buffer_address = (uint32_t *)((*(uint32_t *)(env->regs[R_ESP] + (buffer_index * 4) + seqemu_guest_base)) + seqemu_guest_base);
+						honeypot_checking_state = 1;
+						break;
+					}
+					honeypot_index++;
+				}
+			}
+			if(buffer_index != 0){
+				break;
 			}
 
 		}
-		honeypot_checking_state = 1;
 	}
 }
 
@@ -968,6 +984,60 @@ void seqemu_open_honeypot_logfile(void){
 		return;
 	}
 
-	seqemu_honeypot_logfile = fopen("honeypot.log","w");
+	seqemu_honeypot_logfile = fopen(SEQEMU_HONEYPOT_LOG_FILE,"w");
 }
+
+void seqemu_honeypot_open_function_list(void){
+	char buf[100] = {0};
+	int num_of_function = 0;
+	int index_of_arg;
+	int i;
+	FILE *fp;
+
+	if(seqemu_disable_honeypot){
+		return;
+	}
+
+	fp = fopen(SEQEMU_HONEYPOT_LIST_FILE,"r");
 	
+	while(fgets(buf,sizeof(buf),fp) != NULL){
+		num_of_function++;
+	}
+
+	fclose(fp);
+
+	honeypot_list = (Seqemu_honeypot_function_list *)g_malloc(sizeof(Seqemu_honeypot_function_list) * (num_of_function + 1));
+	memset(honeypot_list,0x0,sizeof(Seqemu_honeypot_function_list) * (num_of_function + 1));
+
+
+	fp = fopen(SEQEMU_HONEYPOT_LIST_FILE,"r");
+
+	for(i = 0; i < num_of_function; i++){
+		fscanf(fp,"%[^,],%d\n",buf,&index_of_arg);
+		honeypot_list[i].name = strdup(buf);
+		honeypot_list[i].arg_index = index_of_arg;
+	}
+
+	fclose(fp);
+}
+
+void seqemu_honeypot_write_log(char *func, char *log){
+	int buffer_length;
+	char *ptr;
+	char date[64] = {0};
+	time_t t;
+
+	buffer_length = strlen(log);
+
+	ptr = (char *)g_malloc(sizeof(char) * buffer_length);
+	memset(ptr,0x0,sizeof(char) * buffer_length);
+
+	strncpy(ptr,log,buffer_length);
+	ptr[buffer_length] = '\0';
+
+	t = time(NULL);
+	strftime(date,sizeof(date),SEQEMU_HONEYPOT_TIME_FORMAT,localtime(&t));
+
+	fprintf(seqemu_honeypot_logfile,"%s:[%s] %s\n",date,func,ptr);
+	fflush(seqemu_honeypot_logfile);
+}
