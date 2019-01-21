@@ -681,6 +681,7 @@ int main(int argc, char **argv, char **envp)
     }
 
     // SeQEMU
+    seqemu_elf_open_func_list();
     seqemu_read_elf(execfd);
 
 

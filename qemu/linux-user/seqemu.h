@@ -34,10 +34,9 @@ void handle_arg_seqemu(const char *arg);
 
 // feature-002 Filtering the Dangerous Functions
 // feature-010 Random output of Characters
-void seqemu_bswap_2(void *p);
-void seqemu_bswap_4(void *p);
-
+// feature-015 Function List from Files
 void seqemu_read_elf(int fd);
+void seqemu_elf_open_func_list(void);
 void seqemu_random_output_of_characters(void);
 typedef struct{
 	char *name;

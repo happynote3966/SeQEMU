@@ -139,58 +139,12 @@ void handle_arg_seqemu(const char *arg){
 // feature-002 Filtering the Dangerous Functions
 // feature-012 Checking System Call
 
-static const char *dangerous_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
-	"gets",
-	""
-};
 
-static const char *format_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
-	"printf",
-	"fprintf",
-	""
-};
-
-static const char *malloc_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
-	"malloc",
-	"free",
-	""
-};
-
-static const char *buffer_func[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
-	"memcpy",
-	"fgets"
-};
-
-static const char *libc_start_main[SEQEMU_MAX_FUNCTION_NAME_LENGTH] = {
-	"__libc_start_main",
-	""
-};
-
-
-
-void seqemu_bswap_2(void *p){
-	uint8_t tmp;
-	uint8_t *sp;
-
-	sp = (uint8_t *)p;
-	tmp = sp[0];
-	sp[0] = sp[1];
-	sp[1] = tmp;
-}
-
-void seqemu_bswap_4(void *p){
-	uint8_t tmp;
-	uint8_t *sp;
-
-	sp = (uint8_t *)p;
-	tmp = sp[0];
-	sp[0] = sp[3];
-	sp[3] = tmp;
-
-	tmp = sp[1];
-	sp[1] = sp[2];
-	sp[2] = tmp;
-}
+char **dangerous_func;
+char **format_func;
+char **malloc_func;
+char **buffer_func;
+char **libc_start_main;
 
 Seqemu_target_func *target_func;
 unsigned int seqemu_target_func_num;
@@ -386,6 +340,65 @@ void seqemu_read_elf(int fd){
 	}
 
 
+}
+
+// Feature-015 Function List from Files
+static const char SEQEMU_ELF_DANGEROUS_FUNC_LIST_PATH[] = "resources/general/dangerous.txt";
+static const char SEQEMU_ELF_FORMAT_FUNC_LIST_PATH[] = "resources/general/format.txt";
+static const char SEQEMU_ELF_MALLOC_FUNC_LIST_PATH[] = "resources/general/malloc.txt";
+static const char SEQEMU_ELF_BUFFER_FUNC_LIST_PATH[] = "resources/general/buffer.txt";
+static const char SEQEMU_ELF_LIBC_FUNC_LIST_PATH[] = "resources/general/libc.txt";
+
+static const char *SEQEMU_ELF_FUNC_PATHS[] = {
+	SEQEMU_ELF_DANGEROUS_FUNC_LIST_PATH,
+	SEQEMU_ELF_FORMAT_FUNC_LIST_PATH,
+	SEQEMU_ELF_MALLOC_FUNC_LIST_PATH,
+	SEQEMU_ELF_BUFFER_FUNC_LIST_PATH,
+	SEQEMU_ELF_LIBC_FUNC_LIST_PATH,
+	NULL
+};
+
+void seqemu_elf_open_func_list(void){
+	char *func_name;
+	char **list;
+	char ****all;
+	char buf[100];
+	unsigned int line_num;
+	int i,j;
+	FILE *fp;
+	all = (char ****)g_malloc(sizeof(char ***) * 5);
+	memset(all,0x0,sizeof(char ***) * 5);
+
+	all[0] = &dangerous_func;
+	all[1] = &format_func;
+	all[2] = &malloc_func;
+	all[3] = &buffer_func;
+	all[4] = &libc_start_main;
+
+	for(i = 0; SEQEMU_ELF_FUNC_PATHS[i] != NULL; i++){
+		fp = fopen(SEQEMU_ELF_FUNC_PATHS[i],"r");
+		line_num = 0;
+		while(fgets(buf,sizeof(buf),fp) != NULL){
+			line_num++;
+		}
+
+		fclose(fp);
+
+		list = (char **)g_malloc(sizeof(char *) * (line_num + 1));
+		memset(list,0x0,sizeof(char *) * (line_num + 1));
+
+		fp = fopen(SEQEMU_ELF_FUNC_PATHS[i],"r");
+
+		for(j = 0; j < line_num; j++){
+			fscanf(fp,"%[^\n]\n",buf);
+			func_name = strdup(buf);
+			list[j] = func_name;
+		}
+
+		fclose(fp);
+
+		*(all[i]) = list;
+	}
 }
 
 
