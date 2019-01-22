@@ -149,6 +149,9 @@ char **libc_start_main;
 Seqemu_target_func *target_func;
 unsigned int seqemu_target_func_num;
 
+// feature-016 Add self NX
+target_ulong seqemu_self_nx_entry;
+
 void seqemu_read_elf(int fd){
 	Elf32_Ehdr *elfh;
 	Elf32_Shdr *sh,*sh_relplt,*sh_dynstr,*sh_shstrtab,*sh_dynsym,*sh_plt;
@@ -174,6 +177,9 @@ void seqemu_read_elf(int fd){
 	}
 
 	memcpy(elfh,buf,sizeof(Elf32_Ehdr));
+
+	seqemu_self_nx_entry = (target_ulong)elfh->e_entry;
+	fprintf(stderr,"[NX] %x is entry code\n",seqemu_self_nx_entry);
 
 	/////////////////////////////
 	// Step 2. Find the .shstrtab
@@ -592,7 +598,7 @@ void seqemu_util_adjust_stack_args(unsigned int erase_arg_index, unsigned int nu
 		tmp_value = *(uint32_t *)(((i + 1) * 4) + first_arg + seqemu_guest_base);
 		*(uint32_t *)((i * 4) + first_arg + seqemu_guest_base) = tmp_value;
 	}
-	uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
+	//uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
 	
 }
 
@@ -766,6 +772,7 @@ void seqemu_check_heap_metadata(CPUArchState *env){
 //
 
 Seqemu_syscall_filtering_list *filter;
+int seqemu_execute_entry_point = 0;
 void seqemu_check_entry_point(CPUArchState *env){
 	target_ulong eip = env->eip;
 	static int initialized = 0;
@@ -774,8 +781,9 @@ void seqemu_check_entry_point(CPUArchState *env){
 		return;
 	}
 
-	if(seqemu_image_info.entry == eip){
+	if(seqemu_self_nx_entry == eip){
 		fprintf(stderr,"EIP is entry point!\n");
+		seqemu_execute_entry_point = 1;
 		initialized = 1;
 	}
 }
@@ -839,14 +847,6 @@ void seqemu_check_system_call(CPUArchState *env){
 		}
 		i++;
 	}
-	
-
-	/*
-	if(strcmp("flag.txt",(char *)(env->regs[R_EBX] + seqemu_guest_base)) == 0){
-		fprintf(stderr,"flag.txt is open!\n");
-	}
-	*/
-
 }
 
 void seqemu_load_syscall_filtering_list(void){
@@ -1053,4 +1053,55 @@ void seqemu_honeypot_write_log(char *func, char *log){
 
 	fprintf(seqemu_honeypot_logfile,"%s:[%s] %s\n",date,func,ptr);
 	fflush(seqemu_honeypot_logfile);
+}
+
+
+// feature-016 Add self NX
+
+uint32_t seqemu_self_nx_ra;
+uint32_t seqemu_self_nx_libc_ra;
+int seqemu_self_nx_check_start = 0;
+void seqemu_self_nx(CPUArchState *env){
+	static int is_lib_executing = 0;
+	int i;
+
+	if(seqemu_execute_entry_point != 1){
+		return;
+	}
+
+
+	target_ulong eip = env->eip;
+
+	fprintf(stderr,"[NX] %x (%d) is now executing\n",eip,is_lib_executing);
+
+	if(is_lib_executing == 0){
+		if(eip == seqemu_self_nx_libc_ra){
+			seqemu_self_nx_check_start = 1;
+			return;
+		}
+
+		if(!(seqemu_image_info.start_code <= eip && eip <= seqemu_image_info.end_code) && seqemu_self_nx_check_start == 1){
+			fprintf(stderr,"[NX] %x Self NX is Enabled!\n",eip);
+			exit(-1);
+		}
+
+		for(i = 0; i < seqemu_target_func_num; i++){
+			if(target_func[i].plt_addr == eip){
+				if(strcmp("__libc_start_main",target_func[i].name) == 0){
+					seqemu_self_nx_libc_ra = *(uint32_t *)(env->regs[R_ESP] + 4 + seqemu_guest_base);
+					break;
+				}
+				is_lib_executing = 1;
+				// Get RA
+				seqemu_self_nx_ra = *(uint32_t *)(env->regs[R_ESP] + seqemu_guest_base);
+				fprintf(stderr,"[NX] %x is lib return address\n",seqemu_self_nx_ra);
+				break;
+			}
+	
+		}
+	}else{
+		if(eip == seqemu_self_nx_ra){
+			is_lib_executing = 0;
+		}
+	}
 }

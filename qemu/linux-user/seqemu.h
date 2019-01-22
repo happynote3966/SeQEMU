@@ -101,4 +101,8 @@ typedef struct{
 	unsigned int arg_index;
 }Seqemu_honeypot_function_list;
 
+// feature-016 Add self NX
+
+void seqemu_self_nx(CPUArchState *env);
+
 #endif /* SEQEMU_H */

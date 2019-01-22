@@ -156,6 +156,7 @@ static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
     seqemu_check_control_flow(env);
     seqemu_check_heap_metadata(env);
     seqemu_function_honey_pot(env);
+    seqemu_self_nx(env);
 
     qemu_log_mask_and_addr(CPU_LOG_EXEC, itb->pc,
                            "Trace %d: %p ["
