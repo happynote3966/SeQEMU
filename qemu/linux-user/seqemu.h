@@ -29,6 +29,7 @@ void handle_arg_disable_heap(const char *arg);
 void handle_arg_disable_syscall(const char *arg);
 // feature-014 Adding function honey pot
 void handle_arg_disable_honeypot(const char *arg);
+void handle_arg_disable_selfnx(const char *arg);
 void handle_arg_disable_all(const char *arg);
 void handle_arg_seqemu(const char *arg);
 

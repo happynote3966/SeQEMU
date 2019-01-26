@@ -457,6 +457,8 @@ static const struct qemu_argument arg_table[] = {
      "",           "disable system call security feature"},
     {"seqemu-disable-honeypot","SEQEMU_DISABLE_HONEYPOT",false,handle_arg_disable_honeypot,
      "",           "disable honeypot feature"},
+    {"seqemu-disable-selfnx","SEQEMU_DISABLE_SELFNX",false,handle_arg_disable_selfnx,
+     "",           "disable self-NX feature"},
     {"seqemu-disable-all","SEQEMU_DISABLE_ALL",false,handle_arg_disable_all,
      "",           "disable all security feature"},
     {"seqemu","SEQEMU",false,handle_arg_seqemu,

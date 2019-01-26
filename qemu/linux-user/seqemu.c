@@ -23,7 +23,7 @@ int seqemu_disable_buffer = 0;
 int seqemu_disable_heap = 0;
 int seqemu_disable_syscall = 0;
 int seqemu_disable_honeypot = 0;
-
+int seqemu_disable_selfnx = 0;
 // feature-012 Checking System Call
 int seqemu_execute_libc_start_main = 0;
 
@@ -123,6 +123,10 @@ void handle_arg_disable_honeypot(const char *arg){
 	seqemu_disable_honeypot = 1;
 }
 
+void handle_arg_disable_selfnx(const char *arg){
+	seqemu_disable_selfnx = 1;
+}
+
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_disable_format = 1;
@@ -130,6 +134,7 @@ void handle_arg_disable_all(const char *arg){
 	seqemu_disable_heap = 1;
 	seqemu_disable_syscall = 1;
 	seqemu_disable_honeypot = 1;
+	seqemu_disable_selfnx = 1;
 }
 
 void handle_arg_seqemu(const char *arg){
@@ -1064,6 +1069,11 @@ int seqemu_self_nx_check_start = 0;
 void seqemu_self_nx(CPUArchState *env){
 	static int is_lib_executing = 0;
 	int i;
+
+	if(seqemu_disable_selfnx){
+		return;
+	}
+
 
 	if(seqemu_execute_entry_point != 1){
 		return;
