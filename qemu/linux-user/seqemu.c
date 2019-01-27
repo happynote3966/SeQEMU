@@ -24,6 +24,7 @@ int seqemu_disable_heap = 0;
 int seqemu_disable_syscall = 0;
 int seqemu_disable_honeypot = 0;
 int seqemu_disable_selfnx = 0;
+int seqemu_disable_uaf = 0;
 // feature-012 Checking System Call
 int seqemu_execute_libc_start_main = 0;
 
@@ -127,6 +128,10 @@ void handle_arg_disable_selfnx(const char *arg){
 	seqemu_disable_selfnx = 1;
 }
 
+void handle_arg_disable_uaf(const char *arg){
+	seqemu_disable_uaf = 1;
+}
+
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_disable_format = 1;
@@ -135,6 +140,7 @@ void handle_arg_disable_all(const char *arg){
 	seqemu_disable_syscall = 1;
 	seqemu_disable_honeypot = 1;
 	seqemu_disable_selfnx = 1;
+	seqemu_disable_uaf = 1;
 }
 
 void handle_arg_seqemu(const char *arg){
@@ -1115,3 +1121,95 @@ void seqemu_self_nx(CPUArchState *env){
 		}
 	}
 }
+
+// feature-018 Adding UAF prevention
+
+const char SEQEMU_UAF_LIST_FILE[] = "resources/uaf/function.txt";
+Seqemu_uaf_function_list *uaf_list;
+void seqemu_uaf_prevention(CPUArchState *env){
+	target_ulong eip = env->eip;
+	int i,uaf_index,j;
+
+
+	if(seqemu_disable_uaf){
+		return;
+	}
+
+	uaf_index = 0;
+
+	for(i = 0; i < seqemu_target_func_num; i++){
+		if(target_func[i].plt_addr == eip){
+			while(uaf_list[uaf_index].name != NULL){
+				if(strcmp(uaf_list[uaf_index].name,target_func[i].name) == 0){
+					for(j = 0; j < 100; j++){
+						if(heap_func_freed_address[j] == 0){
+							continue;
+						}
+						fprintf(stderr,"[UAF] address is %x\n",(unsigned int)heap_func_freed_address[j]);
+						seqemu_uaf_check_arg(env,uaf_list[uaf_index].arg_num,(uint32_t)heap_func_freed_address[j]);
+					}
+				}
+				uaf_index++;
+			}
+		}
+	}
+}
+
+
+uint32_t seqemu_uaf_get_arg_n(CPUArchState *env, unsigned int n){
+	return *(uint32_t *)(env->regs[R_ESP] + (n * 4) + seqemu_guest_base);
+}
+
+void seqemu_uaf_check_arg(CPUArchState *env, unsigned int n, uint32_t value){
+	int i;
+
+	for(i = 0; i < n; i++){
+		if(value == seqemu_uaf_get_arg_n(env,i)){
+			fprintf(stderr,"[UAF] Use After Free Detected! Exiting...\n");
+			exit(-1);
+		}
+	}
+}
+
+
+void seqemu_uaf_open_function_list(void){
+	FILE *fp;
+	char buf[100] = {0};
+	int num_of_function = 0;
+	int num_of_arg;
+	int i;
+
+	if(seqemu_disable_uaf){
+		return;
+	}
+
+	fp = fopen(SEQEMU_UAF_LIST_FILE,"r");
+
+	
+	while(fgets(buf,sizeof(buf),fp) != NULL){
+		num_of_function++;
+	}
+
+	fclose(fp);
+
+	uaf_list = (Seqemu_uaf_function_list *)g_malloc(sizeof(Seqemu_uaf_function_list) * (num_of_function + 1));
+	memset(uaf_list,0x0,sizeof(Seqemu_uaf_function_list) * (num_of_function + 1));
+
+
+	fp = fopen(SEQEMU_UAF_LIST_FILE,"r");
+
+	for(i = 0; i < num_of_function; i++){
+		fscanf(fp,"%[^,],%d\n",buf,&num_of_arg);
+		uaf_list[i].name = strdup(buf);
+		uaf_list[i].arg_num = num_of_arg;
+	}
+
+	fclose(fp);
+
+	fprintf(stderr,"[UAF] here is list of functions\n");
+	for(i = 0; i < num_of_function; i++){
+		fprintf(stderr,"[%d] %s %d\n",i,uaf_list[i].name,uaf_list[i].arg_num);
+	}
+
+}
+

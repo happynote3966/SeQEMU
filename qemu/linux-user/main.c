@@ -459,6 +459,8 @@ static const struct qemu_argument arg_table[] = {
      "",           "disable honeypot feature"},
     {"seqemu-disable-selfnx","SEQEMU_DISABLE_SELFNX",false,handle_arg_disable_selfnx,
      "",           "disable self-NX feature"},
+    {"seqemu-disable-uaf","SEQEMU_DISABLE_UAF",false,handle_arg_disable_uaf,
+     "",           "disable UAF prevention feature"},
     {"seqemu-disable-all","SEQEMU_DISABLE_ALL",false,handle_arg_disable_all,
      "",           "disable all security feature"},
     {"seqemu","SEQEMU",false,handle_arg_seqemu,
@@ -755,6 +757,7 @@ int main(int argc, char **argv, char **envp)
     //SeQEMU
     seqemu_load_syscall_filtering_list();
     seqemu_open_honeypot_logfile();
+    seqemu_uaf_open_function_list();
     seqemu_honeypot_open_function_list();
     seqemu_save_guest_base(guest_base);
     seqemu_print_guest_base();

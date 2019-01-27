@@ -3,6 +3,24 @@
 mkdir build_i386_linux_user
 cd build_i386_linux_user
 
+cat <<EOF > test-uaf.c
+#include <stdio.h>
+#include <stdlib.h>
+int main()
+{
+	char *ptr = (char *)malloc(sizeof(char) * 20);
+	fgets(ptr,20,stdin);
+
+	free(ptr);
+
+	fgets(ptr,20,stdin);
+
+}
+
+EOF
+
+gcc -o test-uaf -m32 -fno-PIE -z execstack -fno-stack-protector -fno-PIE -Wl,-z,norelro test-uaf.c
+
 cat <<EOF > test-nx.c
 #include <stdio.h>
 char shellcode[] = "\x68\x2f\x73\x68\x00\x68\x2f\x62\x69\x6e\x89\xe3\x31\xd2\x52\x53\x89\xe1\xb8\x0b\x00\x00\x00\xcd\x80";

@@ -30,6 +30,8 @@ void handle_arg_disable_syscall(const char *arg);
 // feature-014 Adding function honey pot
 void handle_arg_disable_honeypot(const char *arg);
 void handle_arg_disable_selfnx(const char *arg);
+// feature-018 Adding UAF prevention
+void handle_arg_disable_uaf(const char *arg);
 void handle_arg_disable_all(const char *arg);
 void handle_arg_seqemu(const char *arg);
 
@@ -105,5 +107,17 @@ typedef struct{
 // feature-016 Add self NX
 
 void seqemu_self_nx(CPUArchState *env);
+
+
+// feature-018 Add UAF Prevention
+void seqemu_uaf_prevention(CPUArchState *env);
+void seqemu_uaf_open_function_list(void);
+uint32_t seqemu_uaf_get_arg_n(CPUArchState *env, unsigned int n);
+void seqemu_uaf_check_arg(CPUArchState *env, unsigned int n, uint32_t value);
+
+typedef struct{
+	char *name;
+	unsigned int arg_num;
+}Seqemu_uaf_function_list;
 
 #endif /* SEQEMU_H */
