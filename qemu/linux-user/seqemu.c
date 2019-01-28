@@ -18,7 +18,7 @@ struct image_info seqemu_image_info;
 int seqemu_disable_dangerous = 0;
 int seqemu_format_level = SEQEMU_FEATURE_MITIGATION;
 int seqemu_disable_buffer = 0;
-int seqemu_disable_heap = 0;
+int seqemu_heap_level = SEQEMU_FEATURE_MITIGATION;
 
 int seqemu_disable_syscall = 0;
 int seqemu_disable_honeypot = 0;
@@ -100,8 +100,17 @@ void handle_arg_disable_buffer(const char *arg){
 	seqemu_disable_buffer = 1;
 }
 
-void handle_arg_disable_heap(const char *arg){
-	seqemu_disable_heap = 1;
+void handle_arg_heap_level(const char *arg){
+	if(strcmp(arg,"mitigation") == 0){
+		seqemu_heap_level = SEQEMU_FEATURE_MITIGATION;
+	}else if(strcmp(arg,"abort") == 0){
+		seqemu_heap_level = SEQEMU_FEATURE_ABORT;
+	}else if(strcmp(arg,"disable") == 0){
+		seqemu_heap_level = SEQEMU_FEATURE_DISABLE;
+	}else{
+		fprintf(stderr,"[HEAP] %s is not support level. Exiting.\n",arg);
+		exit(EXIT_FAILURE);
+	}
 }
 
 void handle_arg_disable_syscall(const char *arg){
@@ -124,7 +133,7 @@ void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_format_level = SEQEMU_FEATURE_DISABLE;
 	seqemu_disable_buffer = 1;
-	seqemu_disable_heap = 1;
+	seqemu_heap_level = SEQEMU_FEATURE_DISABLE;
 	seqemu_disable_syscall = 1;
 	seqemu_disable_honeypot = 1;
 	seqemu_disable_selfnx = 1;
@@ -135,7 +144,7 @@ void handle_arg_abort_all(const char *arg){
 	seqemu_disable_dangerous = SEQEMU_FEATURE_ABORT;
 	seqemu_format_level = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_buffer = SEQEMU_FEATURE_ABORT;
-	seqemu_disable_heap = SEQEMU_FEATURE_ABORT;
+	seqemu_heap_level = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_syscall = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_honeypot = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_selfnx = SEQEMU_FEATURE_ABORT;
@@ -560,6 +569,12 @@ void seqemu_check_format_string(CPUArchState *env){
 		pmatch = seqemu_util_get_pointer_of_format_string_parameter(string);
 		if(seqemu_util_is_n_format(&string[pmatch[0].rm_so],pmatch[0].rm_eo - pmatch[0].rm_so)){
 			fprintf(stderr,"[DEBUG] FORMAT : n parameter is number %d\n", i + 1);
+
+			if(seqemu_format_level == SEQEMU_FEATURE_ABORT){
+				fprintf(stderr,"[FORMAT] Exiting...\n");
+				exit(EXIT_FAILURE);
+			}
+			
 			for(j = 0; j < pmatch[0].rm_eo - pmatch[0].rm_so; j++){
 				string[pmatch[0].rm_so + j] = SEQEMU_FORMAT_REPLACE_CHAR;
 			}
@@ -677,7 +692,6 @@ void seqemu_check_control_flow(CPUArchState *env){
 			if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_BUFFER){
 				checking_return_address_pointer = env->regs[5] + 4;
 				protect_return_address = *(uint32_t *)(checking_return_address_pointer + seqemu_guest_base);
-				//checking_function_address = target_func[i].plt_addr;
 				checking_state = 1;
 				fprintf(stderr,"[STACK] RA = 0x%x\n",protect_return_address);
 				break;
@@ -700,7 +714,7 @@ void seqemu_check_heap_metadata(CPUArchState *env){
 	target_ulong eip = env->eip;
 	Seqemu_target_func *f;
 
-	if(seqemu_disable_heap){
+	if(seqemu_heap_level == SEQEMU_FEATURE_DISABLE){
 		return;
 	}
 
@@ -721,14 +735,27 @@ void seqemu_check_heap_metadata(CPUArchState *env){
 			fprintf(stderr,"[MALLOC] free(0x%x) is called!\n",heap_func_arg_value);
 
 			if(seqemu_heap_check_freed_list(heap_func_arg_value)){
-				fprintf(stderr,"[!!!!!!] DOUBLE FREE detected! free arg is already freed! Overwrite zero!\n");
-				*(uint32_t *)((env->regs[R_ESP] + 4) + seqemu_guest_base) = 0x0;
-				return;
+				if(seqemu_heap_level == SEQEMU_FEATURE_MITIGATION){
+					fprintf(stderr,"[HEAP] DOUBLE FREE detected! free arg is already freed! Overwrite zero!\n");
+					*(uint32_t *)((env->regs[R_ESP] + 4) + seqemu_guest_base) = 0x0;
+					return;
+				}else{
+					fprintf(stderr,"[HEAP] DOUBLE FREE detected! free() arg is already freed!\n");
+					fprintf(stderr,"[HEAP] Exiting...\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			if(!seqemu_heap_check_allocated_list(heap_func_arg_value)){
-				fprintf(stderr,"[!!!!!!] Not allocated memory freed! Overwrite zero!\n");
-				*(uint32_t *)((env->regs[R_ESP] + 4) + seqemu_guest_base) = 0x0;
+				if(seqemu_heap_level == SEQEMU_FEATURE_MITIGATION){
+					fprintf(stderr,"[HEAP] Not allocated memory freed! Overwrite zero!\n");
+					*(uint32_t *)((env->regs[R_ESP] + 4) + seqemu_guest_base) = 0x0;
+					return;
+				}else{
+					fprintf(stderr,"[HEAP] Not allocated memory freed!\n");
+					fprintf(stderr,"[HEAP] Exiting...\n");
+					exit(EXIT_FAILURE);
+				}
 			}
 
 			seqemu_heap_add_freed_list(heap_func_arg_value);
@@ -831,20 +858,6 @@ int seqemu_heap_check_allocated_list(target_ulong malloc_addr){
 	return 0;
 }
 
-/*
-void seqemu_heap_update_heap_list(target_ulong addr, int type){
-	if(type == SEQEMU_HEAP_MALLOC){
-		seqemu_heap_add_malloced_list(addr);
-		seqemu_heap_remove_freed_list(addr);
-	}
-
-	if(type == SEQEMU_HEAP_FREE){
-		seqemu_heap_add_freed_list(addr);
-		seqemu_heap_remove_malloced_list(addr);
-	}
-
-}
-*/
 
 // feature-012 Checking System Call
 //
@@ -1030,9 +1043,6 @@ void seqemu_function_honey_pot(CPUArchState *env){
 		return;
 	}
 
-	//fprintf(stderr,"[HONEY] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
-
-
 	// after execute library function
 	if(honeypot_checking_state){
 		if(eip == seqemu_honeypot_ra){
@@ -1152,10 +1162,7 @@ void seqemu_self_nx(CPUArchState *env){
 		return;
 	}
 
-
 	target_ulong eip = env->eip;
-
-	fprintf(stderr,"[NX] %x (%d) is now executing\n",eip,is_lib_executing);
 
 	if(is_lib_executing == 0){
 		if(eip == seqemu_self_nx_libc_ra){

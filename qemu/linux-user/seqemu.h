@@ -17,7 +17,7 @@ extern struct image_info seqemu_image_info;
 extern int seqemu_disable_dangerous;
 extern int seqemu_format_level;
 extern int seqemu_disable_buffer;
-extern int seqemu_disable_heap;
+extern int seqemu_heap_level;
 
 void seqemu_print_debug(void);
 void seqemu_save_guest_base(unsigned long base);
@@ -30,7 +30,7 @@ void seqemu_print_image_info(void);
 void handle_arg_disable_dangerous(const char *arg);
 void handle_arg_format_level(const char *arg);
 void handle_arg_disable_buffer(const char *arg);
-void handle_arg_disable_heap(const char *arg);
+void handle_arg_heap_level(const char *arg);
 void handle_arg_disable_syscall(const char *arg);
 // feature-014 Adding function honey pot
 void handle_arg_disable_honeypot(const char *arg);
