@@ -7,20 +7,19 @@
 #include <fcntl.h>	// open
 #include <stdlib.h>	// rand,srand
 #include <time.h>	// time
-#include "seqemu.h"
 #include <regex.h>	// reg
 #include <dirent.h>	// opendir,readdir
-//#include "qemu.h"	// image_info
-//#include "include/exec/user/abitypes.h" // abi_ulong
-//#include <stdio.h>	// fprintf
+
+#include "seqemu.h"
 
 unsigned long seqemu_guest_base;
 struct image_info seqemu_image_info;
 // feature-011 add options of security feature
 int seqemu_disable_dangerous = 0;
-int seqemu_disable_format = 0;
+int seqemu_format_level = SEQEMU_FEATURE_MITIGATION;
 int seqemu_disable_buffer = 0;
 int seqemu_disable_heap = 0;
+
 int seqemu_disable_syscall = 0;
 int seqemu_disable_honeypot = 0;
 int seqemu_disable_selfnx = 0;
@@ -28,9 +27,6 @@ int seqemu_disable_uaf = 0;
 // feature-012 Checking System Call
 int seqemu_execute_libc_start_main = 0;
 
-void seqemu_print_debug(void){
-    fprintf(stderr,"SEQEMU DEBUGGING!\n");
-}
 
 void seqemu_save_guest_base(unsigned long base){
     seqemu_guest_base = base;
@@ -42,28 +38,7 @@ void seqemu_print_guest_base(void){
 
 
 void seqemu_save_image_info(struct image_info *info){
-	seqemu_image_info.load_bias = info->load_bias;
-	seqemu_image_info.load_addr = info->load_addr;
-	seqemu_image_info.start_code = info->start_code;
-	seqemu_image_info.end_code = info->end_code;
-	seqemu_image_info.start_data = info->start_data;
-	seqemu_image_info.end_data = info->end_data;
-	seqemu_image_info.start_brk = info->start_brk;
-	seqemu_image_info.brk = info->brk;
-	seqemu_image_info.start_mmap = info->start_mmap;
-	seqemu_image_info.start_stack = info->start_stack;
-	seqemu_image_info.stack_limit = info->stack_limit;
-	seqemu_image_info.entry = info->entry;
-	seqemu_image_info.code_offset = info->code_offset;
-	seqemu_image_info.data_offset = info->data_offset;
-	seqemu_image_info.saved_auxv = info->saved_auxv;
-	seqemu_image_info.auxv_len = info->auxv_len;
-	seqemu_image_info.arg_start = info->arg_start;
-	seqemu_image_info.arg_end = info->arg_end;
-	seqemu_image_info.arg_strings = info->arg_strings;
-	seqemu_image_info.env_strings = info->env_strings;
-	seqemu_image_info.file_string = info->file_string;
-
+	memcpy(&seqemu_image_info,info,sizeof(struct image_info));
 }
 
 void seqemu_print_image_info(void){
@@ -98,14 +73,27 @@ void seqemu_print_image_info(void){
 }
 
 
+/////////////////////////////////////////////////////////////////
+// OPTIONS
+/////////////////////////////////////////////////////////////////
+
 // feature-011 add options of security feature
 
 void handle_arg_disable_dangerous(const char *arg){
 	seqemu_disable_dangerous = 1;
 }
 
-void handle_arg_disable_format(const char *arg){
-	seqemu_disable_format = 1;
+void handle_arg_format_level(const char *arg){
+	if(strcmp(arg,"mitigation") == 0){
+		seqemu_format_level = SEQEMU_FEATURE_MITIGATION;
+	}else if(strcmp(arg,"abort") == 0){
+		seqemu_format_level = SEQEMU_FEATURE_ABORT;
+	}else if(strcmp(arg,"disable") == 0){
+		seqemu_format_level = SEQEMU_FEATURE_DISABLE;
+	}else{
+		fprintf(stderr,"[FORMAT] %s is not support level. Exiting.\n",arg);
+		exit(EXIT_FAILURE);
+	}
 }
 
 void handle_arg_disable_buffer(const char *arg){
@@ -134,7 +122,7 @@ void handle_arg_disable_uaf(const char *arg){
 
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
-	seqemu_disable_format = 1;
+	seqemu_format_level = SEQEMU_FEATURE_DISABLE;
 	seqemu_disable_buffer = 1;
 	seqemu_disable_heap = 1;
 	seqemu_disable_syscall = 1;
@@ -143,9 +131,25 @@ void handle_arg_disable_all(const char *arg){
 	seqemu_disable_uaf = 1;
 }
 
-void handle_arg_seqemu(const char *arg){
-	fprintf(stderr,"SeQEMU Version 1.0\n");
+void handle_arg_abort_all(const char *arg){
+	seqemu_disable_dangerous = SEQEMU_FEATURE_ABORT;
+	seqemu_format_level = SEQEMU_FEATURE_ABORT;
+	seqemu_disable_buffer = SEQEMU_FEATURE_ABORT;
+	seqemu_disable_heap = SEQEMU_FEATURE_ABORT;
+	seqemu_disable_syscall = SEQEMU_FEATURE_ABORT;
+	seqemu_disable_honeypot = SEQEMU_FEATURE_ABORT;
+	seqemu_disable_selfnx = SEQEMU_FEATURE_ABORT;
+	seqemu_disable_uaf = SEQEMU_FEATURE_ABORT;
 }
+
+void handle_arg_seqemu(const char *arg){
+	fprintf(stderr,SEQEMU_VERSION_STRING);
+}
+
+
+///////////////////////////////////////////////////////////
+// OPTIONS END
+///////////////////////////////////////////////////////////
 
 // feature-002 Filtering the Dangerous Functions
 // feature-012 Checking System Call
@@ -424,7 +428,6 @@ void seqemu_random_output_of_characters(void){
 	// Open dame.txt and get the file size
 	struct stat stbuf;
 	int character_fd;
-	//int character_fd = open("resources/dame.txt",O_RDONLY)
 	long file_size;
 	char *output_buffer;
 	int file_number;
@@ -446,8 +449,6 @@ void seqemu_random_output_of_characters(void){
 	}
 	closedir(dir);
 
-	// will be deleted
-	fprintf(stderr,"%d",count_of_files);
 	
 	// make filename
 	strcpy(file_name_buf,"resources/characters/");
@@ -500,50 +501,75 @@ void seqemu_random_output_of_characters(void){
 	exit(-1);
 }
 
+// feature-019 Refactoring
+Seqemu_target_func *seqemu_util_get_target_func(unsigned int addr,int t){
+	int i;
+	Seqemu_target_func *f = NULL;
+	for(i = 0; i < seqemu_target_func_num; i++){
+		if(target_func[i].plt_addr == addr){
+			if(t == 0 || target_func[i].type == t){
+				f = (Seqemu_target_func *)calloc(1,sizeof(Seqemu_target_func));
+				memcpy(f,&target_func[i],sizeof(Seqemu_target_func));
+				break;
+			}
+		}
+	}
+
+	return f;
+}
+
+uint32_t seqemu_util_get_arg_n(CPUArchState *env, unsigned int n){
+	return *(uint32_t *)(env->regs[R_ESP] + (n * 4) + seqemu_guest_base);
+}
+
 
 // Feature-005 Restricting Format String
 // Feature-009 PowerUp the Restricting Format String feature
 
+#define SEQEMU_FORMAT_REPLACE_CHAR 'x'
 
 void seqemu_check_format_string(CPUArchState *env){
 	target_ulong eip = env->eip;
 	int i,j;
 	unsigned int count_of_format_parameter = 0;
 	char *string;
+	uint32_t arg;
+	
 	regmatch_t *pmatch;
+	Seqemu_target_func *f;
 
-	if(seqemu_disable_format){
+	if(seqemu_format_level == SEQEMU_FEATURE_DISABLE){
 		return;
 	}
 
-	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x\n",env->eip,env->regs[4]);
+	f = seqemu_util_get_target_func(eip,SEQEMU_FUNC_TYPE_FORMAT);
 
-	for(i = 0; i < seqemu_target_func_num; i++){
-		if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_FORMAT){
-			target_ulong first_arg = env->regs[4] + 4;
-			uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
-			char *format_string = (char *)(instack_value + seqemu_guest_base);
-			count_of_format_parameter = seqemu_util_count_format_string_parameter(format_string);
-
-			fprintf(stderr,"[DEBUG] FORMAT : format parameter is %d\n",count_of_format_parameter);
-
-			string = format_string;
-			for(j = 0; j < count_of_format_parameter; j++){
-				pmatch = seqemu_util_get_pointer_of_format_string_parameter(string);
-				if(seqemu_util_is_n_format(&string[pmatch[0].rm_so],pmatch[0].rm_eo - pmatch[0].rm_so)){
-					fprintf(stderr,"[DEBUG] FORMAT : n parameter is number %d\n", j + 1);
-					int k;
-					for(k = 0; k < pmatch[0].rm_eo - pmatch[0].rm_so; k++){
-						string[pmatch[0].rm_so + k] = 'x';
-					}
-					seqemu_util_adjust_stack_args((unsigned int)j + 1,count_of_format_parameter,first_arg);
-				}
-				string = &string[pmatch[0].rm_eo];
-			}
-
-			break;
-		}
+	if(f == NULL){
+		return;
 	}
+
+	arg = seqemu_util_get_arg_n(env,1);
+
+	char *format_string = (char *)(arg + seqemu_guest_base);
+	count_of_format_parameter = seqemu_util_count_format_string_parameter(format_string);
+
+	fprintf(stderr,"[DEBUG] FORMAT : format parameter is %d\n",count_of_format_parameter);
+
+	string = format_string;
+	for(i = 0; i < count_of_format_parameter; i++){
+		pmatch = seqemu_util_get_pointer_of_format_string_parameter(string);
+		if(seqemu_util_is_n_format(&string[pmatch[0].rm_so],pmatch[0].rm_eo - pmatch[0].rm_so)){
+			fprintf(stderr,"[DEBUG] FORMAT : n parameter is number %d\n", i + 1);
+			for(j = 0; j < pmatch[0].rm_eo - pmatch[0].rm_so; j++){
+				string[pmatch[0].rm_so + j] = SEQEMU_FORMAT_REPLACE_CHAR;
+			}
+			seqemu_util_adjust_stack_args((unsigned int)i + 1,count_of_format_parameter,env->regs[4]+4);
+		}
+		string = &string[pmatch[0].rm_eo];
+	}
+
+	free(f);
+
 }
 
 unsigned int seqemu_util_count_format_string_parameter(char *format_string){
@@ -609,18 +635,13 @@ void seqemu_util_adjust_stack_args(unsigned int erase_arg_index, unsigned int nu
 		tmp_value = *(uint32_t *)(((i + 1) * 4) + first_arg + seqemu_guest_base);
 		*(uint32_t *)((i * 4) + first_arg + seqemu_guest_base) = tmp_value;
 	}
-	//uint32_t instack_value = *(uint32_t *)(first_arg + seqemu_guest_base);
-	
 }
 
 // feature-006 Checking Control Flow
 
 int checking_state = 0;
-//int lib_pass = 0;
 target_ulong protect_return_address = 0x0;
 target_ulong checking_return_address_pointer = 0x0;
-//target_ulong checking_function_address = 0x0;
-//target_ulong sh_plt_addr = 0x0;
 
 void seqemu_check_control_flow(CPUArchState *env){
 	target_ulong eip = env->eip;
@@ -666,6 +687,8 @@ void seqemu_check_control_flow(CPUArchState *env){
 }
 
 // feature-007 Checking Heap Chunk
+#define SEQEMU_HEAP_MALLOC 1
+#define SEQEMU_HEAP_FREE 2
 
 target_ulong heap_func_return_address;
 target_ulong heap_func_arg_value;
@@ -674,110 +697,154 @@ target_ulong heap_func_freed_address[100] = {0};
 int checking_return_address = 0;
 
 void seqemu_check_heap_metadata(CPUArchState *env){
-	int i,index;
 	target_ulong eip = env->eip;
+	Seqemu_target_func *f;
 
 	if(seqemu_disable_heap){
 		return;
 	}
 
-
-	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
-
 	if(!checking_return_address){
-		for(i = 0; i < seqemu_target_func_num; i++){
-			if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_MALLOC){
-				target_ulong first_arg = env->regs[4] + 4;
-				target_ulong return_address = env->regs[4];
-				heap_func_arg_value = *(uint32_t *)(first_arg + seqemu_guest_base);
-				heap_func_return_address = *(uint32_t *)(return_address + seqemu_guest_base);
-				
-				if(strcmp(target_func[i].name,"malloc") == 0){
-					fprintf(stderr,"[MALLOC] malloc(0x%x) is called!\n",heap_func_arg_value);
-					checking_return_address = 1;
-				}else if(strcmp(target_func[i].name,"free") == 0){
-					fprintf(stderr,"[MALLOC] free(0x%x) is called!\n",heap_func_arg_value);
+		f = seqemu_util_get_target_func(eip,SEQEMU_FUNC_TYPE_MALLOC);
 
-					for(index = 0; index < 100; index++){
-						if(heap_func_freed_address[index] == heap_func_arg_value){
-							*(uint32_t *)(first_arg + seqemu_guest_base) = 0x0;
-							fprintf(stderr,"[!!!!!!] DOUBLE FREE detected! free arg is already freed! Overwrite zero!\n");
-							break;
-						}
-					}
-
-					int checking_allocated_address = 0x0;
-
-					for(index = 0; index < 100; index++){
-						if(heap_func_allocated_address[index] == heap_func_arg_value){
-							checking_allocated_address = 0x1;
-							break;
-						}
-					}
-
-					if(!checking_allocated_address){
-						fprintf(stderr,"[!!!!!!] Not allocated memory freed! Overwrite zero!\n");
-						*(uint32_t *)(first_arg + seqemu_guest_base) = 0x0;
-					}
-
-					// allocated list update
-					for(index = 0; index < 100; index++){
-						if(heap_func_allocated_address[index] == heap_func_arg_value){
-							heap_func_allocated_address[index] = 0x0;
-							break;
-						}
-					}
-
-					// freed list update
-					for(index = 0; index < 100; index++){
-						if(heap_func_freed_address[index] == 0x0){
-							heap_func_freed_address[index] = heap_func_arg_value;
-							break;
-						}
-					}
-					checking_return_address = 2;
-				}
-
-				fprintf(stderr,"[MALLOC] return address is 0x%x\n",heap_func_return_address);
-
-				break;
-			}
+		if(f == NULL){
+			return;
 		}
-	}else{
-		if(eip == heap_func_return_address){
-			target_ulong return_value = env->regs[0];
-			switch(checking_return_address){
-				case 0x1:
-					// allocated list update
-					for(index = 0; index < 100; index++){
-						if(heap_func_allocated_address[index] == 0x0){
-							heap_func_allocated_address[index] = return_value;
-							break;
-						}
-					}
 
-					// freed list update
-					for(index = 0; index < 100; index++){
-						if(heap_func_freed_address[index] == return_value){
-							heap_func_freed_address[index] = 0x0;
-							break;
-						}
-					}
+		heap_func_arg_value = seqemu_util_get_arg_n(env,1);
+		heap_func_return_address = seqemu_util_get_arg_n(env,0);
 
-					fprintf(stderr,"[MALLOC] malloc(0x%x) -> 0x%x\n",heap_func_arg_value,return_value);
-					break;
-				case 0x2:
-					fprintf(stderr,"[MALLOC] free(0x%x) -> 0x%x\n",heap_func_arg_value,return_value);
-					break;
+		if(strcmp(f->name,"malloc") == 0){
+			fprintf(stderr,"[MALLOC] malloc(0x%x) is called!\n",heap_func_arg_value);
+			checking_return_address = 1;
+		}else if(strcmp(f->name,"free") == 0){
+			fprintf(stderr,"[MALLOC] free(0x%x) is called!\n",heap_func_arg_value);
+
+			if(seqemu_heap_check_freed_list(heap_func_arg_value)){
+				fprintf(stderr,"[!!!!!!] DOUBLE FREE detected! free arg is already freed! Overwrite zero!\n");
+				*(uint32_t *)((env->regs[R_ESP] + 4) + seqemu_guest_base) = 0x0;
+				return;
 			}
 
-			heap_func_arg_value = 0x0;
-			heap_func_return_address = 0x0;
-			checking_return_address = 0x0;
+			if(!seqemu_heap_check_allocated_list(heap_func_arg_value)){
+				fprintf(stderr,"[!!!!!!] Not allocated memory freed! Overwrite zero!\n");
+				*(uint32_t *)((env->regs[R_ESP] + 4) + seqemu_guest_base) = 0x0;
+			}
+
+			seqemu_heap_add_freed_list(heap_func_arg_value);
+			seqemu_heap_remove_malloced_list(heap_func_arg_value);
+
+			checking_return_address = 2;
+
+		}
+
+		fprintf(stderr,"[MALLOC] return address is 0x%x\n",heap_func_return_address);
+
+	}else if(eip == heap_func_return_address){
+		switch(checking_return_address){
+			// malloc
+			case 1:
+				seqemu_heap_add_malloced_list(env->regs[R_EAX]);
+				seqemu_heap_remove_freed_list(env->regs[R_EAX]);
+				fprintf(stderr,"[MALLOC] malloc(0x%x) -> 0x%x\n",heap_func_arg_value,env->regs[R_EAX]);
+				break;
+			// free
+			case 0x2:
+				fprintf(stderr,"[MALLOC] free(0x%x) -> 0x%x\n",heap_func_arg_value,env->regs[R_EAX]);
+				break;
+		}
+
+		heap_func_arg_value = 0x0;
+		heap_func_return_address = 0x0;
+		checking_return_address = 0x0;
+	}
+}
+
+void seqemu_heap_add_malloced_list(target_ulong malloc_addr){
+	int i;
+	for(i = 0; i < 100; i++){
+		if(heap_func_allocated_address[i] == 0){
+			heap_func_allocated_address[i] = malloc_addr;
+			return;
 		}
 	}
 
+	// malloced list is full
+	fprintf(stderr,"[HEAP] malloc-ed list is FULL! Exiting...\n");
+	exit(EXIT_FAILURE);
 }
+
+void seqemu_heap_add_freed_list(target_ulong freed_addr){
+	int i;
+	for(i = 0; i < 100; i++){
+		if(heap_func_freed_address[i] == 0){
+			heap_func_freed_address[i] = freed_addr;
+			return;
+		}
+	}
+
+	// freed list is full
+	fprintf(stderr,"[HEAP] free-ed list is FULL! Exiting...\n");
+	exit(EXIT_FAILURE);
+}
+
+void seqemu_heap_remove_malloced_list(target_ulong free_addr){
+	int i;
+	for(i = 0; i < 100; i++){
+		if(heap_func_allocated_address[i] == free_addr){
+			heap_func_allocated_address[i] = 0;
+		}
+	}
+}
+
+void seqemu_heap_remove_freed_list(target_ulong malloc_addr){
+	int i;
+	for(i = 0; i < 100; i++){
+		if(heap_func_freed_address[i] == malloc_addr){
+			heap_func_freed_address[i] = 0;
+		}
+	}
+}
+
+int seqemu_heap_check_freed_list(target_ulong free_addr){
+	int i;
+
+	for(i = 0; i < 100; i++){
+		if(heap_func_freed_address[i] == free_addr){
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+int seqemu_heap_check_allocated_list(target_ulong malloc_addr){
+	int i;
+
+	for(i = 0; i < 100; i++){
+		if(heap_func_allocated_address[i] == malloc_addr){
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/*
+void seqemu_heap_update_heap_list(target_ulong addr, int type){
+	if(type == SEQEMU_HEAP_MALLOC){
+		seqemu_heap_add_malloced_list(addr);
+		seqemu_heap_remove_freed_list(addr);
+	}
+
+	if(type == SEQEMU_HEAP_FREE){
+		seqemu_heap_add_freed_list(addr);
+		seqemu_heap_remove_malloced_list(addr);
+	}
+
+}
+*/
 
 // feature-012 Checking System Call
 //

@@ -8,9 +8,14 @@
 #include <regex.h>
 extern unsigned long seqemu_guest_base;
 extern struct image_info seqemu_image_info;
+
+#define SEQEMU_FEATURE_DISABLE 0
+#define SEQEMU_FEATURE_MITIGATION 1
+#define SEQEMU_FEATURE_ABORT 2
+
 // feature-011 add options of security feature
 extern int seqemu_disable_dangerous;
-extern int seqemu_disable_format;
+extern int seqemu_format_level;
 extern int seqemu_disable_buffer;
 extern int seqemu_disable_heap;
 
@@ -23,7 +28,7 @@ void seqemu_print_image_info(void);
 // feature-011 add options of security feature
 // feature-012 Checking System Call
 void handle_arg_disable_dangerous(const char *arg);
-void handle_arg_disable_format(const char *arg);
+void handle_arg_format_level(const char *arg);
 void handle_arg_disable_buffer(const char *arg);
 void handle_arg_disable_heap(const char *arg);
 void handle_arg_disable_syscall(const char *arg);
@@ -33,7 +38,11 @@ void handle_arg_disable_selfnx(const char *arg);
 // feature-018 Adding UAF prevention
 void handle_arg_disable_uaf(const char *arg);
 void handle_arg_disable_all(const char *arg);
+void handle_arg_abort_all(const char *arg);
 void handle_arg_seqemu(const char *arg);
+#define SEQEMU_VERSION_STRING "SeQEMU Version 2.0\n"
+
+
 
 // feature-002 Filtering the Dangerous Functions
 // feature-010 Random output of Characters
@@ -58,6 +67,11 @@ typedef struct{
 #define SEQEMU_FUNC_TYPE_OTHER 0x5
 #define SEQEMU_FUNC_TYPE_LIBC_START_MAIN 0x6
 
+
+// feature-019 Refactoring
+Seqemu_target_func *seqemu_util_get_target_func(unsigned int addr,int type);
+uint32_t seqemu_util_get_arg_n(CPUArchState *env, unsigned int n);
+
 // feature-005 Restricting Format String
 void seqemu_check_format_string(CPUArchState *env);
 // feature-009 PowerUp the Restricting Format String feature
@@ -74,6 +88,13 @@ void seqemu_check_control_flow(CPUArchState *env);
 
 // feature-007 Checking Heap Chunk
 void seqemu_check_heap_metadata(CPUArchState *env);
+
+void seqemu_heap_add_malloced_list(target_ulong malloc_addr);
+void seqemu_heap_add_freed_list(target_ulong free_addr);
+void seqemu_heap_remove_malloced_list(target_ulong malloc_addr);
+void seqemu_heap_remove_freed_list(target_ulong free_addr);
+int seqemu_heap_check_freed_list(target_ulong free_addr);
+int seqemu_heap_check_allocated_list(target_ulong malloc_addr);
 
 // feature-012 Checking System Call
 void seqemu_check_entry_point(CPUArchState *env);
