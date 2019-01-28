@@ -24,6 +24,7 @@ int seqemu_disable_syscall = 0;
 int seqemu_disable_honeypot = 0;
 int seqemu_disable_selfnx = 0;
 int seqemu_disable_uaf = 0;
+int seqemu_relro_level = SEQEMU_FEATURE_MITIGATION;
 // feature-012 Checking System Call
 int seqemu_execute_libc_start_main = 0;
 
@@ -129,6 +130,19 @@ void handle_arg_disable_uaf(const char *arg){
 	seqemu_disable_uaf = 1;
 }
 
+void handle_arg_relro_level(const char *arg){
+	if(strcmp(arg,"mitigation") == 0){
+		seqemu_relro_level = SEQEMU_FEATURE_MITIGATION;
+	}else if(strcmp(arg,"abort") == 0){
+		seqemu_relro_level = SEQEMU_FEATURE_ABORT;
+	}else if(strcmp(arg,"disable") == 0){
+		seqemu_relro_level = SEQEMU_FEATURE_DISABLE;
+	}else{
+		fprintf(stderr,"[RELRO] %s is not support level. Exiting.\n",arg);
+		exit(EXIT_FAILURE);
+	}
+}
+
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_format_level = SEQEMU_FEATURE_DISABLE;
@@ -138,6 +152,7 @@ void handle_arg_disable_all(const char *arg){
 	seqemu_disable_honeypot = 1;
 	seqemu_disable_selfnx = 1;
 	seqemu_disable_uaf = 1;
+	seqemu_relro_level = SEQEMU_FEATURE_DISABLE;
 }
 
 void handle_arg_abort_all(const char *arg){
@@ -149,6 +164,7 @@ void handle_arg_abort_all(const char *arg){
 	seqemu_disable_honeypot = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_selfnx = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_uaf = SEQEMU_FEATURE_ABORT;
+	seqemu_relro_level = SEQEMU_FEATURE_ABORT;
 }
 
 void handle_arg_seqemu(const char *arg){
@@ -1157,7 +1173,6 @@ void seqemu_self_nx(CPUArchState *env){
 		return;
 	}
 
-
 	if(seqemu_execute_entry_point != 1){
 		return;
 	}
@@ -1172,7 +1187,7 @@ void seqemu_self_nx(CPUArchState *env){
 
 		if(!(seqemu_image_info.start_code <= eip && eip <= seqemu_image_info.end_code) && seqemu_self_nx_check_start == 1){
 			fprintf(stderr,"[NX] %x Self NX is Enabled!\n",eip);
-			exit(-1);
+			exit(EXIT_FAILURE);
 		}
 
 		for(i = 0; i < seqemu_target_func_num; i++){
@@ -1286,4 +1301,153 @@ void seqemu_uaf_open_function_list(void){
 	}
 
 }
+
+
+
+// feature-021 Add Self RELRO
+
+Seqemu_self_relro_list *relro_list;
+target_ulong seqemu_self_relro_ret = 0;
+void seqemu_self_relro(CPUArchState *env){
+	target_ulong eip = env->eip;
+	Seqemu_target_func *f;
+
+	if(seqemu_relro_level == SEQEMU_FEATURE_DISABLE){
+		return;
+	}
+
+	//fprintf(stderr,"[RELRO] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
+
+	if(seqemu_self_relro_is_main_program(env) == 0){
+		return;
+	}
+
+	seqemu_self_relro_list_create();
+
+	if(seqemu_self_relro_ret == 0){
+		f = seqemu_util_get_target_func(eip,0);
+
+		if(f == NULL){
+			return;
+		}
+
+		seqemu_self_relro_ret = seqemu_util_get_arg_n(env,0);
+		seqemu_self_relro_list_update(f->plt_addr,1);
+	}else if(eip == seqemu_self_relro_ret){
+		seqemu_self_relro_list_update(0x0,2);
+		seqemu_self_relro_ret = 0;
+	}
+
+	seqemu_self_relro_list_check();
+	
+
+
+}
+
+int seqemu_self_relro_is_main_program(CPUArchState *env){
+	static uint32_t seqemu_relro_main_addr = 0;
+	static int seqemu_relro_program_main_checked = 0;
+	Seqemu_target_func *f;
+
+	if(seqemu_relro_program_main_checked == 1){
+		return 1;
+	}
+
+	if(seqemu_relro_main_addr == 0){
+		f = seqemu_util_get_target_func(env->eip,SEQEMU_FUNC_TYPE_LIBC_START_MAIN);
+
+		if(f != NULL){
+			fprintf(stderr,"[RELRO] libc is now\n");
+			seqemu_relro_main_addr = seqemu_util_get_arg_n(env,1);
+			fprintf(stderr,"[RELRO] next is %x\n",seqemu_relro_main_addr);
+		}
+
+		return 0;
+	}else if(seqemu_relro_main_addr == env->eip){
+		fprintf(stderr,"[RELRO] Now, execute program main\n");
+		seqemu_relro_program_main_checked = 1;
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
+void seqemu_self_relro_list_create(void){
+	static int initialized = 0;
+	int i;
+
+	if(initialized){
+		return;
+	}
+
+	relro_list = (Seqemu_self_relro_list *)calloc(seqemu_target_func_num + 1,sizeof(Seqemu_self_relro_list));
+
+
+	for(i = 0; i < seqemu_target_func_num; i++){
+		relro_list[i].got_addr = target_func[i].got_addr;
+		relro_list[i].got_content = *(uint32_t *)(target_func[i].got_addr + seqemu_guest_base);
+		relro_list[i].plt_addr = target_func[i].plt_addr;
+		if(target_func[i].type == SEQEMU_FUNC_TYPE_LIBC_START_MAIN){
+			relro_list[i].status = SEQEMU_SELF_RELRO_RESOLVED;
+		}else{
+			relro_list[i].status = SEQEMU_SELF_RELRO_NOT_RESOLVED;
+		}
+	}
+
+	fprintf(stderr,"[RELRO] relro list is below:\n");
+	fprintf(stderr,"got_addr, content, plt_addr, status\n");
+	for(i = 0; i < seqemu_target_func_num; i++){
+		fprintf(stderr,"[%d] %x %x %x %d\n",i,relro_list[i].got_addr,relro_list[i].got_content,relro_list[i].plt_addr,relro_list[i].status);
+	}
+
+	initialized = 1;
+}
+
+// operate is 1 -> RELRO_NOT_RESOLVED --->>> RELRO_RESOLIVING
+// operate is 2 -> RELRO_RESOLIVING --->>> RELRO_RESOLVED
+void seqemu_self_relro_list_update(target_ulong plt, int op){
+	int index = 0;
+	if(op == 1){
+
+		while(relro_list[index].got_addr != 0){
+			if(relro_list[index].plt_addr == plt && relro_list[index].status == SEQEMU_SELF_RELRO_NOT_RESOLVED){
+				relro_list[index].status = SEQEMU_SELF_RELRO_RESOLVING;
+				return;
+			}
+			index++;
+		}
+	}else if(op == 2){
+		while(relro_list[index].got_addr != 0){
+			if(relro_list[index].status == SEQEMU_SELF_RELRO_RESOLVING){
+				relro_list[index].status = SEQEMU_SELF_RELRO_RESOLVED;
+				relro_list[index].got_content = *(uint32_t *)(relro_list[index].got_addr + seqemu_guest_base);
+				return;
+			}
+			index++;
+		}
+	}
+}
+
+
+void seqemu_self_relro_list_check(void){
+	int index = 0;
+
+	while(relro_list[index].got_addr != 0){
+		if(relro_list[index].got_content != *(uint32_t *)(relro_list[index].got_addr + seqemu_guest_base) && relro_list[index].status != SEQEMU_SELF_RELRO_RESOLVING){
+			fprintf(stderr,"[RELRO] GOT Overwrited!\n");
+
+			if(seqemu_relro_level == SEQEMU_FEATURE_ABORT){
+				fprintf(stderr,"[RELRO] Exiting...\n");
+				exit(EXIT_FAILURE);
+			}
+
+			*(uint32_t *)(relro_list[index].got_addr + seqemu_guest_base) = relro_list[index].got_content;
+
+			return;
+
+		}
+		index++;
+	}
+}
+
 

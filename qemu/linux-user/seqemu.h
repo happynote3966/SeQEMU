@@ -18,7 +18,7 @@ extern int seqemu_disable_dangerous;
 extern int seqemu_format_level;
 extern int seqemu_disable_buffer;
 extern int seqemu_heap_level;
-
+extern int seqemu_relro_level;
 void seqemu_print_debug(void);
 void seqemu_save_guest_base(unsigned long base);
 void seqemu_print_guest_base(void);
@@ -37,6 +37,8 @@ void handle_arg_disable_honeypot(const char *arg);
 void handle_arg_disable_selfnx(const char *arg);
 // feature-018 Adding UAF prevention
 void handle_arg_disable_uaf(const char *arg);
+// feature-021 Adding Self RELRO
+void handle_arg_relro_level(const char *arg);
 void handle_arg_disable_all(const char *arg);
 void handle_arg_abort_all(const char *arg);
 void handle_arg_seqemu(const char *arg);
@@ -140,5 +142,22 @@ typedef struct{
 	char *name;
 	unsigned int arg_num;
 }Seqemu_uaf_function_list;
+
+// feature-021 Add Self RELRO
+void seqemu_self_relro(CPUArchState *env);
+int seqemu_self_relro_is_main_program(CPUArchState *env);
+void seqemu_self_relro_list_create(void);
+void seqemu_self_relro_list_update(target_ulong plt, int op);
+void seqemu_self_relro_list_check(void);
+#define SEQEMU_SELF_RELRO_NOT_RESOLVED 0
+#define SEQEMU_SELF_RELRO_RESOLVING 1
+#define SEQEMU_SELF_RELRO_RESOLVED 2
+
+typedef struct{
+	unsigned int got_addr;
+	unsigned int got_content;
+	unsigned int plt_addr;
+	unsigned int status;
+}Seqemu_self_relro_list;
 
 #endif /* SEQEMU_H */
