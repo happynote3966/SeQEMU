@@ -144,11 +144,13 @@ gcc -o test-dangerous-pie -m32 -fPIE -pie -z execstack -fno-stack-protector -Wl,
 
 cat <<EOF > test-format.c
 #include <stdio.h>
-char format1[] = "%n %x %x";
-int main(void){
 
+char format1[] = "%x %n %x\n";
+char format2[] = "%d %3\$n %x\n";
+
+int main(void){
 	printf(format1,1,2,3);
-	//printf("%d %3$n %x\n",1,2,3);
+	printf(format2,1,2,3);
 
 	return 0;
 }

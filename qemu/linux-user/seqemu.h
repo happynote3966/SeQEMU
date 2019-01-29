@@ -130,7 +130,7 @@ typedef struct{
 // feature-016 Add self NX
 
 void seqemu_self_nx(CPUArchState *env);
-
+int seqemu_util_is_end_program(CPUArchState *env);
 
 // feature-018 Add UAF Prevention
 void seqemu_uaf_prevention(CPUArchState *env);

@@ -1167,48 +1167,76 @@ uint32_t seqemu_self_nx_libc_ra;
 int seqemu_self_nx_check_start = 0;
 void seqemu_self_nx(CPUArchState *env){
 	static int is_lib_executing = 0;
-	int i;
-
+	Seqemu_target_func *f;
 	if(seqemu_disable_selfnx){
 		return;
 	}
+	target_ulong eip = env->eip;
 
-	if(seqemu_execute_entry_point != 1){
+
+	if(seqemu_self_relro_is_main_program(env) == 0){
 		return;
 	}
 
-	target_ulong eip = env->eip;
-
 	if(is_lib_executing == 0){
-		if(eip == seqemu_self_nx_libc_ra){
-			seqemu_self_nx_check_start = 1;
-			return;
-		}
-
-		if(!(seqemu_image_info.start_code <= eip && eip <= seqemu_image_info.end_code) && seqemu_self_nx_check_start == 1){
+		if(!(seqemu_image_info.start_code <= eip && eip <= seqemu_image_info.end_code) && seqemu_util_is_end_program(env) == 0){
 			fprintf(stderr,"[NX] %x Self NX is Enabled!\n",eip);
 			exit(EXIT_FAILURE);
 		}
 
-		for(i = 0; i < seqemu_target_func_num; i++){
-			if(target_func[i].plt_addr == eip){
-				if(strcmp("__libc_start_main",target_func[i].name) == 0){
-					seqemu_self_nx_libc_ra = *(uint32_t *)(env->regs[R_ESP] + 4 + seqemu_guest_base);
-					break;
-				}
-				is_lib_executing = 1;
-				// Get RA
-				seqemu_self_nx_ra = *(uint32_t *)(env->regs[R_ESP] + seqemu_guest_base);
-				fprintf(stderr,"[NX] %x is lib return address\n",seqemu_self_nx_ra);
-				break;
-			}
+		f = seqemu_util_get_target_func(eip,0);
 	
+		if(f == NULL){
+			return;
 		}
-	}else{
-		if(eip == seqemu_self_nx_ra){
-			is_lib_executing = 0;
+	
+		is_lib_executing = 1;
+		seqemu_self_nx_ra = seqemu_util_get_arg_n(env,0);
+		fprintf(stderr,"[NX] %x is lib return address\n",seqemu_self_nx_ra);
+	}else if(eip == seqemu_self_nx_ra){
+		is_lib_executing = 0;
+		seqemu_self_nx_ra = 0;
+		fprintf(stderr,"[NX] lib is end\n");
+	}
+
+}
+
+int seqemu_util_is_end_program(CPUArchState *env){
+	Seqemu_target_func *f;
+	static target_ulong main_addr = 0;
+	static target_ulong end_addr = 0;
+	static int is_end_program = 0;
+
+	if(is_end_program){
+		return 1;
+	}
+
+
+	if(main_addr != 0){
+		if(main_addr == env->eip){
+			end_addr = seqemu_util_get_arg_n(env,0);
+			fprintf(stderr,"[END] main is now execute\n");
+			return 0;
 		}
 	}
+
+	if(end_addr != 0){
+		if(end_addr == env->eip){
+			is_end_program = 1;
+			fprintf(stderr,"[END] end is now execute\n");
+			return 1;
+		}
+		return 0;
+	}
+
+	f = seqemu_util_get_target_func(env->eip,SEQEMU_FUNC_TYPE_LIBC_START_MAIN);
+
+	if(f == NULL){
+		return 0;
+	}
+
+	main_addr = seqemu_util_get_arg_n(env,1);
+	return 0;
 }
 
 // feature-018 Adding UAF prevention

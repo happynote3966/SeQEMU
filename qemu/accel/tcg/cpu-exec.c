@@ -151,6 +151,7 @@ static inline tcg_target_ulong cpu_tb_exec(CPUState *cpu, TranslationBlock *itb)
 
     // SeQEMU
     seqemu_check_entry_point(env);
+	seqemu_util_is_end_program(env);
     seqemu_check_libc_start_main(env);
     seqemu_check_format_string(env);
     seqemu_check_control_flow(env);
