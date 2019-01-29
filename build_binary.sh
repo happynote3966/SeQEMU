@@ -122,10 +122,14 @@ gcc -o test-all -m32 test-all.c
 
 cat <<EOF > test-dangerous.c
 #include <stdio.h>
+
 int main(void){
 	char buf[100];
+
 	gets(buf);
+
 	printf(buf);
+
 	return 0;
 }
 
@@ -140,14 +144,14 @@ gcc -o test-dangerous-pie -m32 -fPIE -pie -z execstack -fno-stack-protector -Wl,
 
 cat <<EOF > test-format.c
 #include <stdio.h>
-char format_string[] = "formatstring %n %x %x\n";
-char print_string[] = "print_string\n";
+char format1[] = "%n %x %x";
 int main(void){
-	int i = 100;
-	printf(format_string,1,2,3);
+
+	printf(format1,1,2,3);
+	//printf("%d %3$n %x\n",1,2,3);
+
 	return 0;
 }
-
 EOF
 
 gcc -o test-format -m32 test-format.c
