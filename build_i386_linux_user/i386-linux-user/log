@@ -1,0 +1,97 @@
+[NX] 8048340 is entry code
+[+] Find .shstrtab! In 28 section.
+[OK] .dynsym is EXIST!
+[OK] .dynstr is EXIST!
+[OK] .rel.plt is EXIST!
+[OK] .plt is EXIST!
+[0] name : printf, got_addr = 0x804a00c, plt_addr = 0x8048300, type = 2
+[1] name : puts, got_addr = 0x804a010, plt_addr = 0x8048310, type = 5
+[2] name : __libc_start_main, got_addr = 0x804a014, plt_addr = 0x8048320, type = 6
+[SYSCALL] SYSCALL TALBE is below
+5 1 1 1 flag.txt
+5 1 1 0 0
+[UAF] here is list of functions
+[0] fgets 3
+[1] atoi 1
+[DEBUG] GUEST BASE = 7fdd237bf000
+load_bias   =0x7fde22f98000 [0xff7d9000]
+load_addr   =0x7fdd2b807000 [0x8048000]
+start_code  =0x7fdd2b807000 [0x8048000]
+end_code    =0x7fdd2b807618 [0x8048618]
+start_data  =0x7fdd2b808f08 [0x8049f08]
+end_data    =0x7fdd2b809038 [0x804a038]
+start_brk   =0x7fdd237bf000 [0x0]
+brk         =0x7fdd2b80903c [0x804a03c]
+start_mmap  =0x7fdda37bf000 [0x80000000]
+start_stack =0x7fde237bcee0 [0xffffdee0]
+stack_limit =0x7fde22fbe000 [0xff7ff000]
+entry       =0x7fde22f98a20 [0xff7d9a20]
+code_offset =0x7fdd237bf000 [0x0]
+data_offset =0x7fdd237bf000 [0x0]
+saved_auxv  =0x7fde237bd020 [0xffffe020]
+auxv_len    =0x7fdd237bf088 [0x88]
+argv_start  =0x7fde237bcee4 [0xffffdee4]
+argv_end    =0x7fde237bcee8 [0xffffdee8]
+arg_strings =0x7fde237bd0d7 [0xffffe0d7]
+env_strings =0x7fde237bd0e6 [0xffffe0e6]
+file_string =0x7fde237bdfe9 [0xffffefe9]
+start_stack =0x7fde237bcee0 [0xffffdee0]
+env_start   =0x7fde237bceec [0xffffdeec]
+auxv_start  =0x7fde237bd020 [0xffffe020]
+[SYSCALL] EAX = 2d EBX = 0 ECX = 0 EDX = ff7fd000 ESI = ff7fd000 EDI = 1 EBP = ffffe0b0 ESP = ffffddf8
+[SYSCALL] EAX = 7a EBX = ffffdbaa ECX = fffffffd EDX = 0 ESI = ff7fd548 EDI = FF7FD000 EBP = ffffddf8 ESP = ffffdb2c
+[SYSCALL] EAX = 21 EBX = ff7f411f ECX = 0 EDX = 3 ESI = 4008000 EDI = FF7FD000 EBP = ffffdcf8 ESP = ffffdc7c
+[SYSCALL] EAX = 21 EBX = ff7f54fc ECX = 4 EDX = ff7f54fc ESI = ff7fd000 EDI = 0 EBP = ffffddf8 ESP = ffffdd3c
+[SYSCALL] EAX = 5 EBX = ff7f45c5 ECX = 80000 EDX = 0 ESI = ff7fd8cc EDI = 1 EBP = ffffd8e8 ESP = ffffd7f8
+[SYSCALL] EAX = c5 EBX = 3 ECX = ffffd810 EDX = ff7fd000 ESI = ff7fd8cc EDI = 1 EBP = ffffd8e8 ESP = ffffd7f8
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1c9ed EDX = 1 ESI = 2 EDI = 3 EBP = 0 ESP = ffffd7c0
+[SYSCALL] EAX = 6 EBX = 3 ECX = 1c9ed EDX = 3 ESI = ff7ba000 EDI = 1 EBP = ffffd8e8 ESP = ffffd7fc
+[SYSCALL] EAX = 21 EBX = ff7f411f ECX = 0 EDX = ff7fd000 ESI = ff7fcea7 EDI = FF7FD000 EBP = ffffd8e8 ESP = ffffd86c
+[SYSCALL] EAX = 5 EBX = ff7fde68 ECX = 80000 EDX = 0 ESI = ffffd92c EDI = 0 EBP = ffffd8d8 ESP = ffffd878
+[SYSCALL] EAX = 3 EBX = 3 ECX = ffffd930 EDX = 200 ESI = ffffd92c EDI = FFFFD930 EBP = ffffd8d8 ESP = ffffd878
+[SYSCALL] EAX = c5 EBX = 3 ECX = ffffd850 EDX = ff7fd000 ESI = 804822d EDI = 3 EBP = ffffd8c8 ESP = ffffd7c8
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1000 EDX = 3 ESI = 22 EDI = FFFFFFFF EBP = 0 ESP = ffffd6e0
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1b5a1c EDX = 5 ESI = 802 EDI = 3 EBP = 0 ESP = ffffd690
+[SYSCALL] EAX = c0 EBX = ff7b3000 ECX = 3000 EDX = 3 ESI = 812 EDI = 3 EBP = 1af ESP = ffffd690
+[SYSCALL] EAX = c0 EBX = ff7b6000 ECX = 2a1c EDX = 3 ESI = 32 EDI = FFFFFFFF EBP = 0 ESP = ffffd690
+[SYSCALL] EAX = 6 EBX = 3 ECX = 0 EDX = ff7b4e28 ESI = 0 EDI = FF7B9000 EBP = ffffd8c8 ESP = ffffd7cc
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1000 EDX = 3 ESI = 22 EDI = FFFFFFFF EBP = 0 ESP = ffffdca0
+[SYSCALL] EAX = f3 EBX = ffffdd30 ECX = 9fd440 EDX = ff602700 ESI = ff7fd000 EDI = 1 EBP = ffffddf8 ESP = ffffdd30
+[SYSCALL] EAX = 7d EBX = ff7b3000 ECX = 2000 EDX = 1 ESI = ff7fd000 EDI = FF7B3000 EBP = ffffdd38 ESP = ffffdc48
+[SYSCALL] EAX = 7d EBX = 8049000 ECX = 1000 EDX = 1 ESI = ff7fd000 EDI = 8049000 EBP = ffffdd38 ESP = ffffdc48
+[SYSCALL] EAX = 7d EBX = ff7fc000 ECX = 1000 EDX = 1 ESI = ff7fd000 EDI = FF7FC000 EBP = ffffdd38 ESP = ffffdc48
+[SYSCALL] EAX = 5b EBX = ff7ba000 ECX = 1c9ed EDX = ff7fd000 ESI = 81982dfa EDI = 204C9 EBP = ffffddf8 ESP = ffffdd2c
+EIP is entry point!
+EIP is LIBC_START_MAIN!
+[RELRO] libc is now
+[RELRO] next is 804843b
+[END] main is now execute
+[RELRO] Now, execute program main
+[RELRO] relro list is below:
+got_addr, content, plt_addr, status
+[0] 804a00c 8048306 8048300 0
+[1] 804a010 8048316 8048310 0
+[2] 804a014 ff61b540 8048320 2
+[NX] 8048459 is lib return address
+[SYSCALL] EAX = c5 EBX = 1 ECX = ffffdce0 EDX = ffffdce0 ESI = ff7b5d60 EDI = 1 EBP = ffffde18 ESP = ffffdc94
+[SYSCALL] EAX = 2d EBX = 0 ECX = fff EDX = ff7b5000 ESI = 0 EDI = 21000 EBP = ff7b6dcc ESP = ffffdb64
+[SYSCALL] EAX = 2d EBX = 806c000 ECX = fff EDX = ff7b5000 ESI = 804b000 EDI = 806C000 EBP = ff7b6dcc ESP = ffffdb64
+[SYSCALL] EAX = 4 EBX = 1 ECX = 804b008 EDX = 9 ESI = ff7b5d60 EDI = 804B008 EBP = 9 ESP = ffffdce4
+[SYSCALL] EAX = 4 EBX = 1 ECX = 804b008 EDX = 1 ESI = ff7b5d60 EDI = 804B008 EBP = 1 ESP = ffffdd24
+[NX] lib is end
+[DEBUG] FORMAT : format parameter is 3
+[DEBUG] FORMAT : n parameter is number 2
+[NX] 804846c is lib return address
+[SYSCALL] EAX = 4 EBX = 1 ECX = 804b008 EDX = 7 ESI = ff7b5d60 EDI = 804B008 EBP = 7 ESP = ffffd834
+[NX] lib is end
+[NX] 804847c is lib return address
+[SYSCALL] EAX = 4 EBX = 1 ECX = 804b008 EDX = b ESI = ff7b5d60 EDI = 804B008 EBP = b ESP = ffffdd14
+[SYSCALL] EAX = 4 EBX = 1 ECX = 804b008 EDX = 1 ESI = ff7b5d60 EDI = 804B008 EBP = 1 ESP = ffffdd24
+[NX] lib is end
+[DEBUG] FORMAT : format parameter is 3
+[DEBUG] FORMAT : n parameter is number 2
+[NX] 804848f is lib return address
+[SYSCALL] EAX = 4 EBX = 1 ECX = 804b008 EDX = 9 ESI = ff7b5d60 EDI = 804B008 EBP = 9 ESP = ffffd834
+[NX] lib is end
+[END] end is now execute
+[SYSCALL] EAX = fc EBX = 0 ECX = ff7b6870 EDX = 0 ESI = 0 EDI = FF7B32D0 EBP = ff7b61e0 ESP = ffffdde8

@@ -145,12 +145,17 @@ gcc -o test-dangerous-pie -m32 -fPIE -pie -z execstack -fno-stack-protector -Wl,
 cat <<EOF > test-format.c
 #include <stdio.h>
 
-char format1[] = "%x %n %x\n";
-char format2[] = "%d %3\$n %x\n";
+char format1[] = "%x %n %x";
+char format2[] = "%d %3\$n %x";
 
 int main(void){
+	puts(format1);
 	printf(format1,1,2,3);
+	printf("\n\n");
+
+	puts(format2);
 	printf(format2,1,2,3);
+	printf("\n");
 
 	return 0;
 }
@@ -177,7 +182,7 @@ EOF
 
 gcc -o test-buffer -m32 test-buffer.c -fno-stack-protector
 
-cat <<EOF > test-malloc.c
+cat <<EOF > test-df.c
 #include <stdio.h>
 #include <malloc.h>
 
@@ -185,18 +190,22 @@ int main(void){
 	char *ptr;
 
 	ptr = (char *)malloc(sizeof(char) * 20);
-	printf("[USER] Pointer = 0x%p\n",ptr);
+	printf("Pointer = %p\n",ptr);
+	printf("Input message : ");
 	fgets(ptr,20,stdin);
-	printf("%s\n",ptr);
+	printf("%s\nLet's Double free!\n",ptr);
+
 	free(ptr);
 	free(ptr);
+
+	printf("Double Free is End!\n");
 
 	return 0;
 }
 
 EOF
 
-gcc -o test-malloc -m32 test-malloc.c
+gcc -o test-df -m32 test-df.c
 
 
 cat <<EOF > test-pie.c

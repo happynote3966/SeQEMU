@@ -1,0 +1,438 @@
+[NX] 8048380 is entry code
+[+] Find .shstrtab! In 28 section.
+[OK] .dynsym is EXIST!
+[OK] .dynstr is EXIST!
+[OK] .rel.plt is EXIST!
+[OK] .plt is EXIST!
+[0] name : free, got_addr = 0x804976c, plt_addr = 0x8048330, type = 3
+[1] name : fgets, got_addr = 0x8049770, plt_addr = 0x8048340, type = 4
+[2] name : malloc, got_addr = 0x8049774, plt_addr = 0x8048350, type = 3
+[3] name : __libc_start_main, got_addr = 0x8049778, plt_addr = 0x8048360, type = 6
+[SYSCALL] SYSCALL TALBE is below
+5 1 1 1 flag.txt
+5 1 1 0 0
+[UAF] here is list of functions
+[0] fgets 3
+[1] atoi 1
+[DEBUG] GUEST BASE = 7f257c3f4000
+load_bias   =0x7f267bbcd000 [0xff7d9000]
+load_addr   =0x7f258443c000 [0x8048000]
+start_code  =0x7f258443c000 [0x8048000]
+end_code    =0x7f258443c668 [0x8048668]
+start_data  =0x7f258443d668 [0x8049668]
+end_data    =0x7f258443d784 [0x8049784]
+start_brk   =0x7f257c3f4000 [0x0]
+brk         =0x7f258443d7a8 [0x80497a8]
+start_mmap  =0x7f25fc3f4000 [0x80000000]
+start_stack =0x7f267c3f1ed0 [0xffffded0]
+stack_limit =0x7f267bbf3000 [0xff7ff000]
+entry       =0x7f267bbcda20 [0xff7d9a20]
+code_offset =0x7f257c3f4000 [0x0]
+data_offset =0x7f257c3f4000 [0x0]
+saved_auxv  =0x7f267c3f2010 [0xffffe010]
+auxv_len    =0x7f257c3f4088 [0x88]
+argv_start  =0x7f267c3f1ed4 [0xffffded4]
+argv_end    =0x7f267c3f1ed8 [0xffffded8]
+arg_strings =0x7f267c3f20c3 [0xffffe0c3]
+env_strings =0x7f267c3f20cf [0xffffe0cf]
+file_string =0x7f267c3f2fec [0xffffefec]
+start_stack =0x7f267c3f1ed0 [0xffffded0]
+env_start   =0x7f267c3f1edc [0xffffdedc]
+auxv_start  =0x7f267c3f2010 [0xffffe010]
+[SYSCALL] EAX = 2d EBX = 0 ECX = 0 EDX = ff7fd000 ESI = ff7fd000 EDI = 1 EBP = ffffe0a0 ESP = ffffdde8
+[SYSCALL] EAX = 7a EBX = ffffdb9a ECX = fffffffc EDX = 0 ESI = ff7fd548 EDI = FF7FD000 EBP = ffffdde8 ESP = ffffdb1c
+[SYSCALL] EAX = 21 EBX = ff7f411f ECX = 0 EDX = 3 ESI = 4008000 EDI = FF7FD000 EBP = ffffdce8 ESP = ffffdc6c
+[SYSCALL] EAX = 21 EBX = ff7f54fc ECX = 4 EDX = ff7f54fc ESI = ff7fd000 EDI = 0 EBP = ffffdde8 ESP = ffffdd2c
+[SYSCALL] EAX = 5 EBX = ff7f45c5 ECX = 80000 EDX = 0 ESI = ff7fd8cc EDI = 1 EBP = ffffd8d8 ESP = ffffd7e8
+[SYSCALL] EAX = c5 EBX = 3 ECX = ffffd800 EDX = ff7fd000 ESI = ff7fd8cc EDI = 1 EBP = ffffd8d8 ESP = ffffd7e8
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1c9ed EDX = 1 ESI = 2 EDI = 3 EBP = 0 ESP = ffffd7b0
+[SYSCALL] EAX = 6 EBX = 3 ECX = 1c9ed EDX = 3 ESI = ff7ba000 EDI = 1 EBP = ffffd8d8 ESP = ffffd7ec
+[SYSCALL] EAX = 21 EBX = ff7f411f ECX = 0 EDX = ff7fd000 ESI = ff7fcea7 EDI = FF7FD000 EBP = ffffd8d8 ESP = ffffd85c
+[SYSCALL] EAX = 5 EBX = ff7fde68 ECX = 80000 EDX = 0 ESI = ffffd91c EDI = 0 EBP = ffffd8c8 ESP = ffffd868
+[SYSCALL] EAX = 3 EBX = 3 ECX = ffffd920 EDX = 200 ESI = ffffd91c EDI = FFFFD920 EBP = ffffd8c8 ESP = ffffd868
+[SYSCALL] EAX = c5 EBX = 3 ECX = ffffd840 EDX = ff7fd000 ESI = 8048231 EDI = 3 EBP = ffffd8b8 ESP = ffffd7b8
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1000 EDX = 3 ESI = 22 EDI = FFFFFFFF EBP = 0 ESP = ffffd6d0
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1b5a1c EDX = 5 ESI = 802 EDI = 3 EBP = 0 ESP = ffffd680
+[SYSCALL] EAX = c0 EBX = ff7b3000 ECX = 3000 EDX = 3 ESI = 812 EDI = 3 EBP = 1af ESP = ffffd680
+[SYSCALL] EAX = c0 EBX = ff7b6000 ECX = 2a1c EDX = 3 ESI = 32 EDI = FFFFFFFF EBP = 0 ESP = ffffd680
+[SYSCALL] EAX = 6 EBX = 3 ECX = 0 EDX = ff7b4e28 ESI = 0 EDI = FF7B9000 EBP = ffffd8b8 ESP = ffffd7bc
+[SYSCALL] EAX = c0 EBX = 0 ECX = 1000 EDX = 3 ESI = 22 EDI = FFFFFFFF EBP = 0 ESP = ffffdc90
+[SYSCALL] EAX = f3 EBX = ffffdd20 ECX = 9fd440 EDX = ff602700 ESI = ff7fd000 EDI = 1 EBP = ffffdde8 ESP = ffffdd20
+[SYSCALL] EAX = 7d EBX = ff7b3000 ECX = 2000 EDX = 1 ESI = ff7fd000 EDI = FF7B3000 EBP = ffffdd28 ESP = ffffdc38
+[SYSCALL] EAX = 7d EBX = ff7fc000 ECX = 1000 EDX = 1 ESI = ff7fd000 EDI = FF7FC000 EBP = ffffdd28 ESP = ffffdc38
+[SYSCALL] EAX = 5b EBX = ff7ba000 ECX = 1c9ed EDX = ff7fd000 ESI = 9a73ed41 EDI = 222FF EBP = ffffdde8 ESP = ffffdd1c
+EIP is entry point!
+EIP is LIBC_START_MAIN!
+[RELRO] libc is now
+[RELRO] next is 804847b
+[END] main is now execute
+[RELRO] Now, execute program main
+[RELRO] relro list is below:
+got_addr, content, plt_addr, status
+[0] 804976c 8048336 8048330 0
+[1] 8049770 8048346 8048340 0
+[2] 8049774 8048356 8048350 0
+[3] 8049778 ff61b540 8048360 2
+[MALLOC] malloc(0x14) is called!
+[MALLOC] return address is 0x8048496
+[NX] 8048496 is lib return address
+[SYSCALL] EAX = 2d EBX = 0 ECX = fff EDX = ff7b5000 ESI = 0 EDI = 21000 EBP = ff7b6dcc ESP = ffffdca4
+[SYSCALL] EAX = 2d EBX = 806b000 ECX = fff EDX = ff7b5000 ESI = 804a000 EDI = 806B000 EBP = ff7b6dcc ESP = ffffdca4
+[MALLOC] malloc(0x14) -> 0x804a008
+[NX] lib is end
+[STACK] RA = 0xff61b637
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[NX] 80484af is lib return address
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdda8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdda8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd78 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd78 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd64 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd64 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd68 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd68 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd2c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd18 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd18 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdce4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdce4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdce8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdce8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdca4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdca4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdca8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdca8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc9c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc9c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc9c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc9c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc88 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc88 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc74 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc74 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc78 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc78 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbc8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbc8 , checking_return_address_pointer = 0xffffde2c
+[SYSCALL] EAX = c5 EBX = 0 ECX = ffffdc10 EDX = ffffdc10 ESI = ff7b55a0 EDI = 0 EBP = ffffdcf8 ESP = ffffdbc4
+[STACK] env->regs[4] + 4 = 0xffffdbc0 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbc4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbc4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbc4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbc4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdb6c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbdc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbdc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe0 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbe0 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbdc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbdc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbdc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbdc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdbec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc8c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc8c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc9c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdc9c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcbc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcbc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcbc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcbc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[SYSCALL] EAX = 3 EBX = 0 ECX = 804a020 EDX = 400 ESI = ff7b55a0 EDI = FF7B5D60 EBP = ffffdcf8 ESP = ffffdcb4
+[STACK] env->regs[4] + 4 = 0xffffdcb0 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcb8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcbc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcbc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdccc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdcfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd0c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd0c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd1c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd1c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd3c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd3c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd30 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd3c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd3c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd4c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd38 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd3c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd3c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd7c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdd7c , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddcc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddfc , checking_return_address_pointer = 0xffffde2c
+[NX] lib is end
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[MALLOC] free(0x804a008) is called!
+[MALLOC] return address is 0x80484bd
+[NX] 80484bd is lib return address
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf0 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf0 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddec , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde4 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffdde8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddac , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddfc , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddfc , checking_return_address_pointer = 0xffffde2c
+[MALLOC] free(0x804a008) -> 0x0
+[NX] lib is end
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[STACK] env->regs[4] + 4 = 0xffffddf8 , checking_return_address_pointer = 0xffffde2c
+[NX] 80484d3 is lib return address
+[UAF] address is 804a008
+[UAF] Use After Free Detected! Exiting...
