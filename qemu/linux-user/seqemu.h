@@ -73,7 +73,8 @@ typedef struct{
 // feature-019 Refactoring
 Seqemu_target_func *seqemu_util_get_target_func(unsigned int addr,int type);
 uint32_t seqemu_util_get_arg_n(CPUArchState *env, unsigned int n);
-
+uint32_t seqemu_util_get_memory(target_ulong addr);
+void seqemu_util_set_memory(target_ulong addr, target_ulong value);
 // feature-005 Restricting Format String
 void seqemu_check_format_string(CPUArchState *env);
 // feature-009 PowerUp the Restricting Format String feature

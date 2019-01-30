@@ -547,6 +547,13 @@ uint32_t seqemu_util_get_arg_n(CPUArchState *env, unsigned int n){
 	return *(uint32_t *)(env->regs[R_ESP] + (n * 4) + seqemu_guest_base);
 }
 
+uint32_t seqemu_util_get_memory(target_ulong addr){
+	return *(uint32_t *)(addr + seqemu_guest_base);
+}
+
+void seqemu_util_set_memory(target_ulong addr, target_ulong value){
+	*(uint32_t *)(addr + seqemu_guest_base) = value;
+}
 
 // Feature-005 Restricting Format String
 // Feature-009 PowerUp the Restricting Format String feature
@@ -672,11 +679,15 @@ void seqemu_util_adjust_stack_args(unsigned int erase_arg_index, unsigned int nu
 
 int checking_state = 0;
 target_ulong protect_return_address = 0x0;
-target_ulong checking_return_address_pointer = 0x0;
-
+target_ulong protect_return_address_pointer = 0x0;
+target_ulong protect_ebp_value = 0x0;
+target_ulong protect_ebp_value_pointer = 0x0;
+target_ulong from_buffer_address = 0x0;
 void seqemu_check_control_flow(CPUArchState *env){
 	target_ulong eip = env->eip;
-	int i;
+	Seqemu_target_func *f;
+	target_ulong tmp_return_address;
+	target_ulong tmp_ebp_value;
 
 	if(seqemu_disable_buffer){
 		return;
@@ -686,33 +697,39 @@ void seqemu_check_control_flow(CPUArchState *env){
 	//fprintf(stderr,"[DEBUG] EIP = 0x%x: ESP = 0x%x EBP = 0x%x\n",env->eip,env->regs[4],env->regs[5]);
 
 	if(checking_state){
-		fprintf(stderr,"[STACK] env->regs[4] + 4 = 0x%x , checking_return_address_pointer = 0x%x\n",env->regs[4] - 4,checking_return_address_pointer);
-		if(env->regs[4] - 4 == checking_return_address_pointer){
-			fprintf(stderr,"[STACK] Address Checking...\n");
-			target_ulong tmp_return_address = *(uint32_t *)(checking_return_address_pointer + seqemu_guest_base);
-			fprintf(stderr,"[STACK] Address is 0x%x\n",tmp_return_address);
-			if(tmp_return_address != protect_return_address){
-				env->eip = protect_return_address;
-				fprintf(stderr,"[!!!!!] Modify RA Detected!\n");
-				fprintf(stderr,"[!!!!!] tmp = 0x%x\n",tmp_return_address);
-				fprintf(stderr,"[!!!!!] Protected Address = 0x%x\n",env->eip);
+		fprintf(stderr,"[STACK] env->regs[4] + 4 = 0x%x , checking_return_address_pointer = 0x%x\n",env->regs[4] - 4,protect_return_address_pointer);
+
+		if(eip == from_buffer_address){
+			tmp_return_address = seqemu_util_get_memory(protect_return_address_pointer);
+			tmp_ebp_value = seqemu_util_get_memory(protect_ebp_value_pointer);
+
+			if((tmp_return_address != protect_return_address) || (tmp_ebp_value != protect_ebp_value)){
+				fprintf(stderr,"[!!!!!] Modify RA or EBP Detected!\n");
+				seqemu_util_set_memory(protect_return_address_pointer,protect_return_address);
+				seqemu_util_set_memory(protect_ebp_value_pointer,protect_ebp_value);
+				
+				protect_return_address = 0x0;
+				protect_return_address_pointer = 0x0;
+				protect_ebp_value = 0x0;
+				protect_ebp_value_pointer = 0x0;
+				checking_state = 0x0;
 			}
-			protect_return_address = 0x0;
-			checking_return_address_pointer = 0x0;
-			checking_state = 0x0;
 		}
 	}else{
-
-
-		for(i = 0; i < seqemu_target_func_num; i++){
-			if(target_func[i].plt_addr == eip && target_func[i].type == SEQEMU_FUNC_TYPE_BUFFER){
-				checking_return_address_pointer = env->regs[5] + 4;
-				protect_return_address = *(uint32_t *)(checking_return_address_pointer + seqemu_guest_base);
-				checking_state = 1;
-				fprintf(stderr,"[STACK] RA = 0x%x\n",protect_return_address);
-				break;
-			}
+		f = seqemu_util_get_target_func(eip,SEQEMU_FUNC_TYPE_BUFFER);
+		
+		if(f == NULL){
+			return;
 		}
+
+		from_buffer_address = seqemu_util_get_arg_n(env,0);
+		protect_ebp_value_pointer = env->regs[R_EBP];
+		protect_ebp_value = seqemu_util_get_memory(protect_ebp_value_pointer);
+		protect_return_address_pointer = env->regs[R_EBP] + 4;
+		protect_return_address = seqemu_util_get_memory(protect_return_address_pointer);
+		checking_state = 1;
+		fprintf(stderr,"[STACK] RA = 0x%x\n",protect_return_address);
+		
 	}
 }
 
