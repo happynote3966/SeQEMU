@@ -1,1 +1,0 @@
-/home/happynote3966/SeQEMU_Second/SeQEMU/qemu/po/Makefile

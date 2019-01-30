@@ -1,2 +1,0 @@
-fgets,1
-gets,1

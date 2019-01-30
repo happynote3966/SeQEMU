@@ -1,2 +1,0 @@
-fgets,3
-atoi,1
