@@ -14,19 +14,13 @@ int main()
 {
 	void *got;
 	unsigned int func;
-	unsigned int num;
+
 	puts("This is puts function output");
-	puts("Please input number(no meaning)");
 
-	scanf("%x",&num);
-	
-	num = 0x8049844;
-
-	got = (void *)num;
+	got = (void *)0x80497b8;
 	func = hacked;
-	printf("%x %x\n",got,func);
 
-
+	printf("Write %x in %x!\n",func,got);
 	*(unsigned int *)got = func;
 
 	puts("This is second puts function output");
@@ -41,17 +35,20 @@ gcc -o test-relro -m32 -fno-PIE -z execstack -fno-stack-protector -fno-PIE -Wl,-
 cat <<EOF > test-uaf.c
 #include <stdio.h>
 #include <stdlib.h>
+
 int main()
 {
 	char *ptr = (char *)malloc(sizeof(char) * 20);
+
 	fgets(ptr,20,stdin);
 
 	free(ptr);
 
 	fgets(ptr,20,stdin);
 
-	return 0;
+	puts("End of Use After Free");
 
+	return 0;
 }
 
 EOF
@@ -74,6 +71,7 @@ gcc -o test-nx -m32 -fno-PIE -z execstack -fno-stack-protector -fno-PIE -Wl,-z,n
 
 cat <<EOF > test-normal.c
 #include <stdio.h>
+
 int main(void){
 	char buf[100] = {0};
 
@@ -168,13 +166,19 @@ cat <<EOF > test-buffer.c
 
 void func(void){
 	char buf[10];
+
+	printf("Input message : ");
 	fgets(buf,30,stdin);
+
+	printf("message : ");
 	puts(buf);
 }
 
 int main(void){
 	func();
+
 	printf("OK! Control Flow is protected!\n");
+
 	return 0;
 }
 
@@ -226,9 +230,12 @@ cat <<EOF > test-open.c
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
 int main(void){
-	int fd = open("flag.txt",O_RDONLY);
-	printf("%d\n",open);
+	printf("Now open \"flag.txt\"\n");
+	unsigned int fd = open("flag.txt",O_RDONLY);
+	printf("fd = %u\n",fd);
+
 	return 0;
 }
 
@@ -237,4 +244,4 @@ EOF
 gcc -o test-open -m32 -fPIE -pie test-open.c
 
 echo "FLAG{THIS_IS_A_FLAG}" > flag.txt
-
+mv flag.txt i386-linux-user/
