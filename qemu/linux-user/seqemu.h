@@ -16,7 +16,7 @@ extern struct image_info seqemu_image_info;
 // feature-011 add options of security feature
 extern int seqemu_disable_dangerous;
 extern int seqemu_format_level;
-extern int seqemu_disable_buffer;
+extern int seqemu_buffer_level;
 extern int seqemu_heap_level;
 extern int seqemu_relro_level;
 void seqemu_print_debug(void);
@@ -29,7 +29,7 @@ void seqemu_print_image_info(void);
 // feature-012 Checking System Call
 void handle_arg_disable_dangerous(const char *arg);
 void handle_arg_format_level(const char *arg);
-void handle_arg_disable_buffer(const char *arg);
+void handle_arg_buffer_level(const char *arg);
 void handle_arg_heap_level(const char *arg);
 void handle_arg_disable_syscall(const char *arg);
 // feature-014 Adding function honey pot

@@ -17,7 +17,7 @@ struct image_info seqemu_image_info;
 // feature-011 add options of security feature
 int seqemu_disable_dangerous = 0;
 int seqemu_format_level = SEQEMU_FEATURE_MITIGATION;
-int seqemu_disable_buffer = 0;
+int seqemu_buffer_level = SEQEMU_FEATURE_MITIGATION;
 int seqemu_heap_level = SEQEMU_FEATURE_MITIGATION;
 
 int seqemu_disable_syscall = 0;
@@ -97,8 +97,17 @@ void handle_arg_format_level(const char *arg){
 	}
 }
 
-void handle_arg_disable_buffer(const char *arg){
-	seqemu_disable_buffer = 1;
+void handle_arg_buffer_level(const char *arg){
+	if(strcmp(arg,"mitigation") == 0){
+		seqemu_buffer_level = SEQEMU_FEATURE_MITIGATION;
+	}else if(strcmp(arg,"abort") == 0){
+		seqemu_buffer_level = SEQEMU_FEATURE_ABORT;
+	}else if(strcmp(arg,"disable") == 0){
+		seqemu_buffer_level = SEQEMU_FEATURE_DISABLE;
+	}else{
+		fprintf(stderr,"[BUFFER] %s is not support level. Exiting.\n",arg);
+		exit(EXIT_FAILURE);
+	}
 }
 
 void handle_arg_heap_level(const char *arg){
@@ -146,7 +155,7 @@ void handle_arg_relro_level(const char *arg){
 void handle_arg_disable_all(const char *arg){
 	seqemu_disable_dangerous = 1;
 	seqemu_format_level = SEQEMU_FEATURE_DISABLE;
-	seqemu_disable_buffer = 1;
+	seqemu_buffer_level = SEQEMU_FEATURE_DISABLE;
 	seqemu_heap_level = SEQEMU_FEATURE_DISABLE;
 	seqemu_disable_syscall = 1;
 	seqemu_disable_honeypot = 1;
@@ -158,7 +167,7 @@ void handle_arg_disable_all(const char *arg){
 void handle_arg_abort_all(const char *arg){
 	seqemu_disable_dangerous = SEQEMU_FEATURE_ABORT;
 	seqemu_format_level = SEQEMU_FEATURE_ABORT;
-	seqemu_disable_buffer = SEQEMU_FEATURE_ABORT;
+	seqemu_buffer_level = SEQEMU_FEATURE_ABORT;
 	seqemu_heap_level = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_syscall = SEQEMU_FEATURE_ABORT;
 	seqemu_disable_honeypot = SEQEMU_FEATURE_ABORT;
@@ -689,7 +698,7 @@ void seqemu_check_control_flow(CPUArchState *env){
 	target_ulong tmp_return_address;
 	target_ulong tmp_ebp_value;
 
-	if(seqemu_disable_buffer){
+	if(seqemu_buffer_level == SEQEMU_FEATURE_DISABLE){
 		return;
 	}
 
@@ -705,6 +714,12 @@ void seqemu_check_control_flow(CPUArchState *env){
 
 			if((tmp_return_address != protect_return_address) || (tmp_ebp_value != protect_ebp_value)){
 				fprintf(stderr,"[!!!!!] Modify RA or EBP Detected!\n");
+
+				if(seqemu_buffer_level == SEQEMU_FEATURE_ABORT){
+					fprintf(stderr,"[BUFFER] Exiting...\n");
+					exit(EXIT_FAILURE);
+				}
+
 				seqemu_util_set_memory(protect_return_address_pointer,protect_return_address);
 				seqemu_util_set_memory(protect_ebp_value_pointer,protect_ebp_value);
 				
